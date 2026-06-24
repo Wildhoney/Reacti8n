@@ -14,7 +14,7 @@ describe("LocaleProvider / useLocale()", () => {
     expect(result.current.locale).toBe("fr");
   });
 
-  it("falls back to the configured fallback when no `locale` prop is given", () => {
+  it("uses the configured initial locale when no `locale` prop is given", () => {
     const { LocaleProvider, useLocale } = makeProvider<"en" | "fr">("en");
     const wrapper = ({ children }: { children: ReactNode }) => (
       <LocaleProvider>{children}</LocaleProvider>

@@ -11,7 +11,7 @@ export type LocaleHandle<L extends string> = {
   setLocale(next: L): void;
 };
 
-export function makeProvider<L extends string>(fallback: L) {
+export function makeProvider<L extends string>(initialLocale: L) {
   const Context = createContext<LocaleHandle<L> | null>(null);
 
   function LocaleProvider({
@@ -23,7 +23,7 @@ export function makeProvider<L extends string>(fallback: L) {
     onLocaleChange?(next: L): void;
     children: ReactNode;
   }) {
-    const [internal, setInternal] = useState<L>(locale ?? fallback);
+    const [internal, setInternal] = useState<L>(locale ?? initialLocale);
     const active = locale ?? internal;
     const handle = useMemo<LocaleHandle<L>>(
       () => ({

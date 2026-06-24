@@ -38,6 +38,56 @@ describe("Dictionary.resolve()", () => {
     );
   });
 
+  it("passes locale-bound helpers to Template formatters", () => {
+    const dict = dictionary({
+      balance: template<{ amount: number }>({
+        en: ({ amount }, helpers) =>
+          helpers
+            .numberFormat({ style: "currency", currency: "USD" })
+            .format(amount),
+        fr: ({ amount }, helpers) =>
+          helpers
+            .numberFormat({ style: "currency", currency: "EUR" })
+            .format(amount),
+      }),
+    });
+    expect(dict.resolve("en").balance({ amount: 1234.5 })).toBe(
+      "$1,234.50",
+    );
+    expect(dict.resolve("fr").balance({ amount: 1234.5 })).toBe(
+      new Intl.NumberFormat("fr", {
+        style: "currency",
+        currency: "EUR",
+      }).format(1234.5),
+    );
+  });
+
+  it("supports dateTimeFormat via helpers in Template formatters", () => {
+    const dict = dictionary({
+      sentOn: template<{ when: Date }>({
+        en: ({ when }, helpers) =>
+          helpers.dateTimeFormat({ dateStyle: "short" }).format(when),
+      }),
+    });
+    const when = new Date("2026-06-24T00:00:00Z");
+    expect(dict.resolve("en").sentOn({ when })).toBe(
+      new Intl.DateTimeFormat("en", { dateStyle: "short" }).format(when),
+    );
+  });
+
+  it("supports pluralRules via helpers in Template formatters", () => {
+    const dict = dictionary({
+      items: template<{ count: number }>({
+        en: ({ count }, helpers) => {
+          const category = helpers.pluralRules().select(count);
+          return category === "one" ? "1 item" : `${count} items`;
+        },
+      }),
+    });
+    expect(dict.resolve("en").items({ count: 1 })).toBe("1 item");
+    expect(dict.resolve("en").items({ count: 5 })).toBe("5 items");
+  });
+
   it("falls back through locales for a Template missing the active variant", () => {
     const dict = dictionary({
       goodbye: template<{ name: string }>({
@@ -71,6 +121,14 @@ describe("Dictionary.resolve()", () => {
     expect(
       (dict.resolve("en") as unknown as { stray: number }).stray,
     ).toBe(42);
+  });
+
+  it("returns null from a Template when no variant is defined anywhere", () => {
+    const empty = template<{ name: string }>({} as never);
+    const dict = dictionary({ broken: empty });
+    expect(
+      (dict.resolve("en") as unknown as { broken: unknown }).broken,
+    ).toBeNull();
   });
 
   it("invokes onFallback when a Template misses the active locale", () => {

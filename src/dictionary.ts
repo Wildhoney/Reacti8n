@@ -1,5 +1,8 @@
+import { makeHelpers, type Helpers } from "./helpers";
 import { Template } from "./template";
 import type { Input, Merged } from "./types";
+
+type Formatter = (args: unknown, helpers: Helpers) => string;
 
 export type FallbackEvent<L extends string> = {
   key: string;
@@ -28,23 +31,28 @@ export class Dictionary<L extends string, D extends Input<L>> {
   resolve(locale: L): Merged<L, D> {
     const cached = this.#cache.get(locale);
     if (cached !== undefined) return cached;
+    const helpers = makeHelpers(locale);
     const resolved = Object.fromEntries(
       Object.entries(this.#entries).map(([key, entry]) => [
         key,
-        this.#pick(entry, key, locale),
+        this.#pick(entry, key, locale, helpers),
       ]),
     ) as Merged<L, D>;
     this.#cache.set(locale, resolved);
     return resolved;
   }
 
-  #pick(entry: unknown, key: string, locale: L): unknown {
+  #pick(entry: unknown, key: string, locale: L, helpers: Helpers): unknown {
     if (entry instanceof Template) {
-      return this.#fromVariants(
+      const formatter = this.#fromVariants(
         entry.variants as Record<string, unknown>,
         key,
         locale,
       );
+      if (typeof formatter === "function") {
+        return (args: unknown) => (formatter as Formatter)(args, helpers);
+      }
+      return formatter;
     }
     if (isObject(entry)) {
       return this.#fromVariants(

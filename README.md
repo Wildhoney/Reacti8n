@@ -2,14 +2,12 @@
 
 Tiny, type-safe, message-first i18n for React. No DSL, no ICU runtime, no codegen — translations are plain TypeScript functions.
 
-## Why
-
-- **Plain TS / JS** — interpolation is template literals, plurals are JS conditionals (or `Intl.PluralRules`), and `Intl.NumberFormat` / `Intl.DateTimeFormat` handle the rest.
-- **Type-safe arguments** — `template<{ name: string }>({...})` enforces the argument shape across every locale at the type level.
-- **Message-first nesting** — each message lives next to its translations, not split across `en: { ... }` and `fr: { ... }` blocks.
-- **At-least-one locale** — a message must be defined in at least one configured locale (any of them, not specifically `en`). Type system rejects empty entries; runtime walks the locale list to find a defined variant.
-- **Fallback observability** — register a callback to log Sentry events whenever the requested locale falls back to another.
-- **No runtime DSL** — drop the `intl-messageformat` parser entirely. Polyfill `Intl.PluralRules` for older runtimes via `@formatjs/intl-pluralrules` if you need full CLDR coverage.
+- **Plain TS / JS** — interpolation is template literals; `Intl.NumberFormat`, `Intl.DateTimeFormat`, and `Intl.PluralRules` are injected per formatter.
+- **Type-safe arguments** — `template<{ name: string }>({...})` enforces the argument shape across every locale.
+- **Message-first nesting** — each message lives next to its translations.
+- **At-least-one locale** — the type system rejects empty entries; the runtime walks the configured `locales` list in order to find a defined variant.
+- **Fallback observability** — register a callback fired whenever the requested locale falls back to another.
+- **No runtime DSL** — drop the `intl-messageformat` parser entirely.
 
 ## Install
 
@@ -23,15 +21,14 @@ Peer dep: `react >= 18`.
 
 ## Setup
 
-Configure once in your app entry. The factory returns a typed set of helpers scoped to your locale list — no module-level globals.
+Configure once in your app entry. The class returns a typed instance scoped to your locale list — no module-level globals. The fallback chain is the order of `locales`: lookup walks left-to-right and stops at the first defined variant. The type system requires at least one locale per message, so a message that is undefined in every locale is a compile error.
 
 ```ts
 // src/i18n.ts
-import { createI18n } from "reacti8n";
+import { Translations } from "reacti8n";
 
-export const i18n = createI18n({
+export const i18n = new Translations({
   locales: ["en", "fr", "de"] as const,
-  fallback: "en", // optional, defaults to locales[0]
   onFallback: (event) => {
     // event: { key, requested, resolved }
     // Fires whenever a key resolves to a non-requested locale,
@@ -44,13 +41,14 @@ export const i18n = createI18n({
 });
 ```
 
-Wrap your app in the provider:
+Detect the active locale at boot and wrap your app in the provider. `detectLocale()` reads `navigator.languages` (or `navigator.language`), matches each candidate's primary tag against the configured `locales`, and returns the first hit — falling back to `locales[0]` if nothing matches. Pass explicit candidates if you have them from a cookie, query string, or server header.
 
 ```tsx
 // src/main.tsx
 import { i18n } from "./i18n";
 
-const detected = i18n.detectLocale();
+const detected = i18n.detectLocale();              // from navigator
+// const detected = i18n.detectLocale(["fr-CA"]);  // from explicit candidates
 
 createRoot(document.getElementById("root")!).render(
   <i18n.LocaleProvider locale={detected}>
@@ -59,9 +57,29 @@ createRoot(document.getElementById("root")!).render(
 );
 ```
 
+The `locale` prop on `<LocaleProvider>` is controlled — pass it to drive the active locale externally (from a router, a cookie, a user preference). Omit it and the provider manages locale state internally, starting at `locales[0]`. Consumers can switch the locale at any time:
+
+```tsx
+function LanguageSwitcher() {
+  const { locale, setLocale } = i18n.useLocale();
+  return (
+    <select
+      value={locale}
+      onChange={(event) => setLocale(event.target.value as never)}
+    >
+      {i18n.locales.map((supportedLocale) => (
+        <option key={supportedLocale} value={supportedLocale}>
+          {supportedLocale}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
 ## Defining messages
 
-A `Dictionary` is a flat record of message-id → variants. Each entry is either a plain `{ en, fr, ... }` map or a `template<Args>({ ... })` wrapper for messages that take arguments.
+A dictionary is a flat record of message-id → variants. Each entry is either a plain `{ en, fr, ... }` map or an `i18n.template<Args>({ ... })` wrapper for messages that take arguments. Template formatters receive `(args, helpers)` — `helpers` is locale-bound and exposes `numberFormat`, `dateTimeFormat`, and `pluralRules` factories that return memoisable `Intl` instances.
 
 ```ts
 import { i18n } from "./i18n";
@@ -77,17 +95,36 @@ export const translations = i18n.dictionary({
     de: ({ name }) => `Hallo, ${name}`,
   }),
 
-  // Plurals via plain JS.
+  // Plurals via Intl.PluralRules, exposed through helpers.
   items: i18n.template<{ count: number }>({
-    en: ({ count }) =>
-      count === 0 ? "No items" : count === 1 ? "1 item" : `${count} items`,
-    fr: ({ count }) =>
-      count <= 1 ? `${count} article` : `${count} articles`,
-    de: ({ count }) => (count === 1 ? "1 Eintrag" : `${count} Einträge`),
+    en: ({ count }, helpers) => {
+      const category = helpers.pluralRules().select(count);
+      return category === "one" ? "1 item" : `${count} items`;
+    },
+    fr: ({ count }, helpers) => {
+      const category = helpers.pluralRules().select(count);
+      return category === "one" ? `${count} article` : `${count} articles`;
+    },
+    de: ({ count }, helpers) => {
+      const category = helpers.pluralRules().select(count);
+      return category === "one" ? "1 Eintrag" : `${count} Einträge`;
+    },
   }),
 
-  // Partial coverage is fine — falls back to any defined locale at runtime,
-  // and the onFallback callback fires so you can flag the gap upstream.
+  // Currency formatting via helpers.
+  balance: i18n.template<{ amount: number }>({
+    en: ({ amount }, helpers) =>
+      `Balance: ${helpers
+        .numberFormat({ style: "currency", currency: "USD" })
+        .format(amount)}`,
+    fr: ({ amount }, helpers) =>
+      `Solde : ${helpers
+        .numberFormat({ style: "currency", currency: "EUR" })
+        .format(amount)}`,
+  }),
+
+  // Partial coverage is fine — the runtime walks the locale list
+  // in order; the type system requires at least one to be defined.
   auRevoir: { fr: "Au revoir" },
 });
 ```
@@ -109,69 +146,11 @@ export function Welcome({ name }: { name: string }) {
 }
 ```
 
-Plain string entries become strings on the resolved object. Template entries become callables typed with their declared `Args`.
-
-## Locale switching
-
-`useLocale()` returns `{ locale, setLocale }`. Switch at runtime however you like:
-
-```tsx
-function LanguageSwitcher() {
-  const { locale, setLocale } = i18n.useLocale();
-  return (
-    <select value={locale} onChange={(e) => setLocale(e.target.value as never)}>
-      {i18n.locales.map((l) => (
-        <option key={l} value={l}>
-          {l}
-        </option>
-      ))}
-    </select>
-  );
-}
-```
-
-Or drive it externally via the controlled `locale` prop on `<LocaleProvider>`.
-
-## Number / date / plural formatting
-
-Three hooks return memoised `Intl` instances scoped to the active locale:
-
-```tsx
-const amount = i18n.useNumberFormat({ style: "currency", currency: "USD" });
-const when = i18n.useDateTimeFormat({ dateStyle: "medium" });
-const plural = i18n.usePluralRules();
-
-amount.format(1234.5);                 // "$1,234.50" in en, "1 234,50 $US" in fr
-when.format(new Date());               // locale-formatted date
-plural.select(1.5);                    // "one" in fr, "other" in en
-```
-
-Compose formatted values into your templates at the call site — keep template strings and formatting separate:
-
-```ts
-balance: i18n.template<{ amount: string }>({
-  en: ({ amount }) => `Balance: ${amount}`,
-  fr: ({ amount }) => `Solde : ${amount}`,
-}),
-
-// Call site:
-const format = i18n.useNumberFormat({ style: "currency", currency: "USD" });
-const t = i18n.useI18n(translations);
-t.balance({ amount: format.format(1234.5) });
-```
-
-## Locale detection
-
-`i18n.detectLocale()` reads `navigator.languages` (or `navigator.language`), matches each candidate's primary tag against the configured `locales`, and returns the first hit. Falls back to the configured fallback if nothing matches.
-
-```ts
-const detected = i18n.detectLocale();           // from navigator
-const detected = i18n.detectLocale(["fr-CA"]);  // from explicit candidates
-```
+Plain string entries become strings on the resolved object. Template entries become callables typed with their declared `Args` — the `helpers` are bound automatically based on the active locale.
 
 ## Fallback observability
 
-A common operational worry with i18n is "missing translations shipped quietly." Reacti8n calls the `onFallback` handler (registered on `createI18n`) every time a Dictionary entry resolves to a non-requested locale, or to `null` when the key is missing entirely.
+A common operational worry with i18n is "missing translations shipped quietly." Reacti8n calls the `onFallback` handler (registered on `new Translations()`) every time a dictionary entry resolves to a non-requested locale, or to `null` when the key is missing entirely.
 
 ```ts
 type FallbackEvent<L> = {
@@ -184,7 +163,7 @@ type FallbackEvent<L> = {
 Pipe these into Sentry / Datadog / your logger of choice:
 
 ```ts
-createI18n({
+new Translations({
   locales: ["en", "fr", "de"] as const,
   onFallback: ({ key, requested, resolved }) => {
     if (resolved === null) {
@@ -202,46 +181,6 @@ createI18n({
 ```
 
 The callback is invoked synchronously inside `Dictionary.resolve()`, so keep it cheap — typically just a logger call.
-
-## Polyfilling `Intl.PluralRules`
-
-Modern browsers + Node 18+ ship full ICU plural data natively. For older runtimes (React Native Hermes, small-icu Node, locked-down embedded), pull in the formatjs polyfill once at app entry:
-
-```ts
-import { installPluralRulesPolyfill } from "reacti8n";
-import { i18n } from "./i18n";
-
-await installPluralRulesPolyfill(i18n.locales);
-```
-
-This conditionally installs `@formatjs/intl-pluralrules` (no-op on engines that already have it) and loads each locale's CLDR data. The two `@formatjs/*` packages are optional peer deps — install them only if you call this function.
-
-## API
-
-| Export | Description |
-|---|---|
-| `createI18n({ locales, fallback?, onFallback? })` | Factory returning the typed helper set (see below) |
-| `Dictionary<L, D>` | The class returned by `i18n.dictionary(...)` — exposed for `instanceof` checks and advanced typing |
-| `Template<L, Args>` | The class returned by `i18n.template(...)` |
-| `installPluralRulesPolyfill(locales, loader?)` | Optional polyfill installer for older runtimes |
-
-`createI18n` returns:
-
-| Member | Description |
-|---|---|
-| `locales`, `fallback` | Echoes of the configured values |
-| `dictionary(entries)` | Builds a `Dictionary<L, D>` |
-| `template<Args>(variants)` | Builds a `Template<L, Args>` |
-| `LocaleProvider`, `useLocale` | The provider + `{ locale, setLocale }` hook |
-| `useI18n(dictionary)` | Resolves a Dictionary for the active locale |
-| `useNumberFormat`, `useDateTimeFormat`, `usePluralRules` | Memoised `Intl` wrappers |
-| `detectLocale(candidates?)`, `isLocale(value)` | Detection helpers |
-
-### Types
-
-`Variants<L, V>` is `AtLeastOne<Record<L, V>>` — exactly one or more of the configured locales must be present at the type level. Empty entries fail to compile.
-
-`Merged<L, D>` is the resolved shape of a Dictionary `D` for locale set `L` — string entries map to `string`, Template entries map to `(args: Args) => string`.
 
 ## License
 

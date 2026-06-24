@@ -1,13 +1,13 @@
-export { createI18n } from "./factory";
+export { Translations } from "./translations";
 export type {
-  CreateI18nConfig,
-  I18n,
   ResolvedDictionary,
-} from "./factory";
+  TranslationsConfig,
+} from "./translations";
 
 export { Dictionary } from "./dictionary";
 export type { FallbackEvent, FallbackHandler } from "./dictionary";
 export { Template } from "./template";
+export type { Helpers } from "./helpers";
 export { installPluralRulesPolyfill } from "./polyfill";
 export type { PolyfillLoader } from "./polyfill";
 export type { LocaleHandle } from "./provider";
@@ -18,6 +18,5 @@ export type {
   Input,
   Merged,
   Resolved,
-  TemplateLike,
   Variants,
 } from "./types";

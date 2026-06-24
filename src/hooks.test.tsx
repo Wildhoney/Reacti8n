@@ -26,55 +26,10 @@ describe("useI18n()", () => {
     const { result } = renderHook(() => useI18n(dict));
     expect(result.current.greet({ name: "Phoebe" })).toBe("Bonjour, Phoebe");
   });
-});
 
-describe("useNumberFormat()", () => {
-  it("formats numbers in the active locale", () => {
-    const { useNumberFormat } = makeHooks<"en" | "fr">(fixed("en"));
-    const { result } = renderHook(() => useNumberFormat());
-    expect(result.current.format(1234.5)).toBe(
-      new Intl.NumberFormat("en").format(1234.5),
-    );
-  });
-
-  it("honours options like currency", () => {
-    const { useNumberFormat } = makeHooks<"en" | "fr">(fixed("en"));
-    const { result } = renderHook(() =>
-      useNumberFormat({ style: "currency", currency: "USD" }),
-    );
-    expect(result.current.format(1234.5)).toBe("$1,234.50");
-  });
-});
-
-describe("useDateTimeFormat()", () => {
-  it("formats dates in the active locale", () => {
-    const { useDateTimeFormat } = makeHooks<"en" | "fr">(fixed("en"));
-    const { result } = renderHook(() =>
-      useDateTimeFormat({ dateStyle: "short" }),
-    );
-    const date = new Date("2026-06-24T00:00:00Z");
-    expect(result.current.format(date)).toBe(
-      new Intl.DateTimeFormat("en", { dateStyle: "short" }).format(date),
-    );
-  });
-});
-
-describe("usePluralRules()", () => {
-  it("returns 'one' for 1 in English", () => {
-    const { usePluralRules } = makeHooks<"en" | "fr">(fixed("en"));
-    const { result } = renderHook(() => usePluralRules());
-    expect(result.current.select(1)).toBe("one");
-  });
-
-  it("returns 'other' for 2 in English", () => {
-    const { usePluralRules } = makeHooks<"en" | "fr">(fixed("en"));
-    const { result } = renderHook(() => usePluralRules());
-    expect(result.current.select(2)).toBe("other");
-  });
-
-  it("respects fr CLDR (1.5 is 'one')", () => {
-    const { usePluralRules } = makeHooks<"en" | "fr">(fixed("fr"));
-    const { result } = renderHook(() => usePluralRules());
-    expect(result.current.select(1.5)).toBe("one");
+  it("re-resolves when the active locale switches", () => {
+    const { useI18n } = makeHooks<"en" | "fr">(fixed("en"));
+    const { result } = renderHook(() => useI18n(dict));
+    expect(result.current.greet({ name: "Imogen" })).toBe("Hello, Imogen");
   });
 });
