@@ -1,0 +1,58 @@
+import { act, render, renderHook } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { describe, expect, it } from "vitest";
+
+import { makeProvider } from "./provider";
+
+describe("LocaleProvider / useLocale()", () => {
+  it("provides the controlled locale when `locale` prop is set", () => {
+    const { LocaleProvider, useLocale } = makeProvider<"en" | "fr">("en");
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <LocaleProvider locale="fr">{children}</LocaleProvider>
+    );
+    const { result } = renderHook(() => useLocale(), { wrapper });
+    expect(result.current.locale).toBe("fr");
+  });
+
+  it("falls back to the configured fallback when no `locale` prop is given", () => {
+    const { LocaleProvider, useLocale } = makeProvider<"en" | "fr">("en");
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <LocaleProvider>{children}</LocaleProvider>
+    );
+    const { result } = renderHook(() => useLocale(), { wrapper });
+    expect(result.current.locale).toBe("en");
+  });
+
+  it("lets consumers override the locale via setLocale", () => {
+    const { LocaleProvider, useLocale } = makeProvider<"en" | "fr">("en");
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <LocaleProvider>{children}</LocaleProvider>
+    );
+    const { result } = renderHook(() => useLocale(), { wrapper });
+    expect(result.current.locale).toBe("en");
+    act(() => result.current.setLocale("fr"));
+    expect(result.current.locale).toBe("fr");
+  });
+
+  it("invokes onLocaleChange when setLocale runs", () => {
+    const { LocaleProvider, useLocale } = makeProvider<"en" | "fr">("en");
+    const seen: string[] = [];
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <LocaleProvider onLocaleChange={(next) => seen.push(next)}>
+        {children}
+      </LocaleProvider>
+    );
+    const { result } = renderHook(() => useLocale(), { wrapper });
+    act(() => result.current.setLocale("fr"));
+    expect(seen).toEqual(["fr"]);
+  });
+
+  it("throws when useLocale is called outside the provider", () => {
+    const { useLocale } = makeProvider<"en" | "fr">("en");
+    function Probe() {
+      useLocale();
+      return null;
+    }
+    expect(() => render(<Probe />)).toThrow(/outside of a <LocaleProvider>/);
+  });
+});
