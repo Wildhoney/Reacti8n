@@ -141,11 +141,11 @@ import { i18n } from "./i18n";
 import { translations } from "./translations";
 
 export function Welcome({ name }: { name: string }) {
-  const t = i18n.useI18n(translations);
+  const copy = i18n.useI18n(translations);
   return (
     <section>
-      <h1>{t.greet({ name })}</h1>
-      <p>{t.ok}</p>
+      <h1>{copy.greet({ name })}</h1>
+      <p>{copy.ok}</p>
     </section>
   );
 }
