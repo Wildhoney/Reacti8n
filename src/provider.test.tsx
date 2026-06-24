@@ -4,29 +4,29 @@ import { describe, expect, it } from "vitest";
 
 import { makeProvider } from "./provider";
 
-describe("LocaleProvider / useLocale()", () => {
+describe("Provider / useLocale()", () => {
   it("provides the controlled locale when `locale` prop is set", () => {
-    const { LocaleProvider, useLocale } = makeProvider<"en" | "fr">("en");
+    const { Provider, useLocale } = makeProvider<"en" | "fr">("en");
     const wrapper = ({ children }: { children: ReactNode }) => (
-      <LocaleProvider locale="fr">{children}</LocaleProvider>
+      <Provider locale="fr">{children}</Provider>
     );
     const { result } = renderHook(() => useLocale(), { wrapper });
     expect(result.current.locale).toBe("fr");
   });
 
   it("uses the configured initial locale when no `locale` prop is given", () => {
-    const { LocaleProvider, useLocale } = makeProvider<"en" | "fr">("en");
+    const { Provider, useLocale } = makeProvider<"en" | "fr">("en");
     const wrapper = ({ children }: { children: ReactNode }) => (
-      <LocaleProvider>{children}</LocaleProvider>
+      <Provider>{children}</Provider>
     );
     const { result } = renderHook(() => useLocale(), { wrapper });
     expect(result.current.locale).toBe("en");
   });
 
   it("lets consumers override the locale via setLocale", () => {
-    const { LocaleProvider, useLocale } = makeProvider<"en" | "fr">("en");
+    const { Provider, useLocale } = makeProvider<"en" | "fr">("en");
     const wrapper = ({ children }: { children: ReactNode }) => (
-      <LocaleProvider>{children}</LocaleProvider>
+      <Provider>{children}</Provider>
     );
     const { result } = renderHook(() => useLocale(), { wrapper });
     expect(result.current.locale).toBe("en");
@@ -35,12 +35,12 @@ describe("LocaleProvider / useLocale()", () => {
   });
 
   it("invokes onLocaleChange when setLocale runs", () => {
-    const { LocaleProvider, useLocale } = makeProvider<"en" | "fr">("en");
+    const { Provider, useLocale } = makeProvider<"en" | "fr">("en");
     const seen: string[] = [];
     const wrapper = ({ children }: { children: ReactNode }) => (
-      <LocaleProvider onLocaleChange={(next) => seen.push(next)}>
+      <Provider onLocaleChange={(next) => seen.push(next)}>
         {children}
-      </LocaleProvider>
+      </Provider>
     );
     const { result } = renderHook(() => useLocale(), { wrapper });
     act(() => result.current.setLocale("fr"));
@@ -53,6 +53,6 @@ describe("LocaleProvider / useLocale()", () => {
       useLocale();
       return null;
     }
-    expect(() => render(<Probe />)).toThrow(/outside of a <LocaleProvider>/);
+    expect(() => render(<Probe />)).toThrow(/outside of an <i18n.Provider>/);
   });
 });

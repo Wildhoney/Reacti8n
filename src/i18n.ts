@@ -18,10 +18,10 @@ export type ResolvedDictionary<L extends string, D extends Input<L>> = Merged<
 
 export class I18n<const L extends string> {
   readonly locales: readonly L[];
-  readonly LocaleProvider: ReturnType<typeof makeProvider<L>>["LocaleProvider"];
+  readonly Provider: ReturnType<typeof makeProvider<L>>["Provider"];
   readonly useLocale: ReturnType<typeof makeProvider<L>>["useLocale"];
   readonly useI18n: ReturnType<typeof makeHooks<L>>["useI18n"];
-  readonly detectLocale: ReturnType<typeof makeDetect<L>>["detectLocale"];
+  readonly detect: ReturnType<typeof makeDetect<L>>["detect"];
   readonly isLocale: ReturnType<typeof makeDetect<L>>["isLocale"];
 
   readonly #onFallback?: FallbackHandler<L>;
@@ -36,13 +36,13 @@ export class I18n<const L extends string> {
     this.#onFallback = config.onFallback;
     const initial = config.locales[0]!;
     const provider = makeProvider<L>(initial);
-    this.LocaleProvider = provider.LocaleProvider;
+    this.Provider = provider.Provider;
     this.useLocale = provider.useLocale;
     const hooks = makeHooks<L>(provider.useLocale);
     this.useI18n = hooks.useI18n;
-    const detect = makeDetect<L>(config.locales, initial);
-    this.detectLocale = detect.detectLocale;
-    this.isLocale = detect.isLocale;
+    const detector = makeDetect<L>(config.locales, initial);
+    this.detect = detector.detect;
+    this.isLocale = detector.isLocale;
     void installPluralRulesPolyfill(config.locales).catch(() => {});
   }
 

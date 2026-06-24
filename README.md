@@ -41,23 +41,23 @@ export const i18n = new I18n({
 });
 ```
 
-Detect the active locale at boot and wrap your app in the provider. `detectLocale()` reads `navigator.languages` (or `navigator.language`), matches each candidate's primary tag against the configured `locales`, and returns the first hit — falling back to `locales[0]` if nothing matches. Pass explicit candidates if you have them from a cookie, query string, or server header.
+Detect the active locale at boot and wrap your app in the provider. `detect()` reads `navigator.languages` (or `navigator.language`), matches each candidate's primary tag against the configured `locales`, and returns the first hit — falling back to `locales[0]` if nothing matches. Pass explicit candidates if you have them from a cookie, query string, or server header.
 
 ```tsx
 // src/main.tsx
 import { i18n } from "./i18n";
 
-const detected = i18n.detectLocale();              // from navigator
-// const detected = i18n.detectLocale(["fr-CA"]);  // from explicit candidates
+const detected = i18n.detect();              // from navigator
+// const detected = i18n.detect(["fr-CA"]);  // from explicit candidates
 
 createRoot(document.getElementById("root")!).render(
-  <i18n.LocaleProvider locale={detected}>
+  <i18n.Provider locale={detected}>
     <App />
-  </i18n.LocaleProvider>,
+  </i18n.Provider>,
 );
 ```
 
-The `locale` prop on `<LocaleProvider>` is controlled — pass it to drive the active locale externally (from a router, a cookie, a user preference). Omit it and the provider manages locale state internally, starting at `locales[0]`. Consumers can switch the locale at any time:
+The `locale` prop on `<i18n.Provider>` is controlled — pass it to drive the active locale externally (from a router, a cookie, a user preference). Omit it and the provider manages locale state internally, starting at `locales[0]`. Consumers can switch the locale at any time:
 
 ```tsx
 function LanguageSwitcher() {
@@ -95,22 +95,28 @@ export const translations = i18n.dictionary({
 
   // Function variants with explicit args (recommended).
   greet: i18n.template<{ name: string }>({
-    en: ({ name }) => `Hello, ${name}`,
-    fr: ({ name }) => `Bonjour, ${name}`,
-    de: ({ name }) => `Hallo, ${name}`,
+    en({ name }) {
+      return `Hello, ${name}`;
+    },
+    fr({ name }) {
+      return `Bonjour, ${name}`;
+    },
+    de({ name }) {
+      return `Hallo, ${name}`;
+    },
   }),
 
   // Plurals via Intl.PluralRules, exposed through helpers.
   items: i18n.template<{ count: number }>({
-    en: ({ count }, helpers) => {
+    en({ count }, helpers) {
       const category = helpers.pluralRules().select(count);
       return category === "one" ? "1 item" : `${count} items`;
     },
-    fr: ({ count }, helpers) => {
+    fr({ count }, helpers) {
       const category = helpers.pluralRules().select(count);
       return category === "one" ? `${count} article` : `${count} articles`;
     },
-    de: ({ count }, helpers) => {
+    de({ count }, helpers) {
       const category = helpers.pluralRules().select(count);
       return category === "one" ? "1 Eintrag" : `${count} Einträge`;
     },
@@ -118,14 +124,16 @@ export const translations = i18n.dictionary({
 
   // Currency formatting via helpers.
   balance: i18n.template<{ amount: number }>({
-    en: ({ amount }, helpers) =>
-      `Balance: ${helpers
+    en({ amount }, helpers) {
+      return `Balance: ${helpers
         .numberFormat({ style: "currency", currency: "USD" })
-        .format(amount)}`,
-    fr: ({ amount }, helpers) =>
-      `Solde : ${helpers
+        .format(amount)}`;
+    },
+    fr({ amount }, helpers) {
+      return `Solde : ${helpers
         .numberFormat({ style: "currency", currency: "EUR" })
-        .format(amount)}`,
+        .format(amount)}`;
+    },
   }),
 
   // Partial coverage is fine — the runtime walks the locale list

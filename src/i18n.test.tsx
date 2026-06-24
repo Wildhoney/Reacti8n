@@ -29,9 +29,9 @@ const translations = i18n.dictionary({
 function wrap(locale?: "en" | "fr" | "de") {
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <i18n.LocaleProvider locale={locale}>
+      <i18n.Provider locale={locale}>
         {children}
-      </i18n.LocaleProvider>
+      </i18n.Provider>
     );
   };
 }
@@ -42,9 +42,7 @@ describe("new I18n()", () => {
   });
 
   it("rejects an empty locales list", () => {
-    expect(() => new I18n({ locales: [] as never })).toThrow(
-      /at least one locale/i,
-    );
+    expect(() => new I18n({ locales: [] })).toThrow(/at least one locale/i);
   });
 
   it("resolves plain string entries via the hooks", () => {
@@ -91,8 +89,8 @@ describe("new I18n()", () => {
   });
 
   it("matches the detected locale against the supported set", () => {
-    expect(i18n.detectLocale(["de-CH", "en-GB"])).toBe("de");
-    expect(i18n.detectLocale(["es-ES"])).toBe("en");
+    expect(i18n.detect(["de-CH", "en-GB"])).toBe("de");
+    expect(i18n.detect(["es-ES"])).toBe("en");
     expect(i18n.isLocale("fr")).toBe(true);
     expect(i18n.isLocale("ja")).toBe(false);
   });
@@ -112,7 +110,7 @@ describe("new I18n()", () => {
     });
     const { result } = renderHook(() => scoped.useI18n(dict), {
       wrapper: ({ children }: { children: ReactNode }) => (
-        <scoped.LocaleProvider locale="en">{children}</scoped.LocaleProvider>
+        <scoped.Provider locale="en">{children}</scoped.Provider>
       ),
     });
     expect(result.current.auRevoir).toBe("Au revoir");

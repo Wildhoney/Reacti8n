@@ -106,29 +106,28 @@ describe("Dictionary.resolve()", () => {
   });
 
   it("returns null when no variant is defined for any locale", () => {
-    const dict = new Dictionary<"en" | "fr", Record<string, never>>(
+    const dict = new Dictionary<"en" | "fr", { broken: { en: string } }>(
       locales,
-      { broken: {} } as never,
+      // @ts-expect-error - exercising the runtime fallback for empty variants
+      { broken: {} },
     );
     expect(dict.resolve("en").broken).toBeNull();
   });
 
   it("returns primitive entries as-is when they aren't Templates or objects", () => {
-    const dict = new Dictionary<"en" | "fr", Record<string, never>>(
+    const dict = new Dictionary<"en" | "fr", { stray: { en: number } }>(
       locales,
-      { stray: 42 } as never,
+      // @ts-expect-error - exercising the runtime branch for non-Entry values
+      { stray: 42 },
     );
-    expect(
-      (dict.resolve("en") as unknown as { stray: number }).stray,
-    ).toBe(42);
+    expect(dict.resolve("en").stray).toBe(42);
   });
 
   it("returns null from a Template when no variant is defined anywhere", () => {
-    const empty = template<{ name: string }>({} as never);
+    // @ts-expect-error - intentionally empty to exercise the resolve-null path
+    const empty = template<{ name: string }>({});
     const dict = dictionary({ broken: empty });
-    expect(
-      (dict.resolve("en") as unknown as { broken: unknown }).broken,
-    ).toBeNull();
+    expect(dict.resolve("en").broken).toBeNull();
   });
 
   it("invokes onFallback when a Template misses the active locale", () => {
@@ -151,9 +150,10 @@ describe("Dictionary.resolve()", () => {
 
   it("invokes onFallback with resolved=null when no locale defines the key", () => {
     const events: FallbackEvent<"en" | "fr">[] = [];
-    const dict = new Dictionary<"en" | "fr", Record<string, never>>(
+    const dict = new Dictionary<"en" | "fr", { broken: { en: string } }>(
       locales,
-      { broken: {} } as never,
+      // @ts-expect-error - exercising the runtime fallback for empty variants
+      { broken: {} },
       (event) => events.push(event),
     );
     expect(dict.resolve("en").broken).toBeNull();

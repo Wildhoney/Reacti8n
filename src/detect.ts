@@ -6,7 +6,7 @@ export function makeDetect<L extends string>(
     return (locales as readonly string[]).includes(value);
   }
 
-  function detectLocale(requested?: readonly string[]): L {
+  function detect(requested?: readonly string[]): L {
     const candidates =
       requested ?? readNavigatorLanguages() ?? ([] as readonly string[]);
     for (const candidate of candidates) {
@@ -19,7 +19,7 @@ export function makeDetect<L extends string>(
     return fallback;
   }
 
-  return { detectLocale, isLocale };
+  return { detect, isLocale };
 }
 
 function readNavigatorLanguages(): readonly string[] | undefined {

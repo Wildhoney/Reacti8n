@@ -14,7 +14,7 @@ export type LocaleHandle<L extends string> = {
 export function makeProvider<L extends string>(initialLocale: L) {
   const Context = createContext<LocaleHandle<L> | null>(null);
 
-  function LocaleProvider({
+  function Provider({
     locale,
     onLocaleChange,
     children,
@@ -42,11 +42,11 @@ export function makeProvider<L extends string>(initialLocale: L) {
     const handle = useContext(Context);
     if (handle === null) {
       throw new Error(
-        "Reacti8n: useLocale() called outside of a <LocaleProvider>.",
+        "Reacti8n: useLocale() called outside of an <i18n.Provider>.",
       );
     }
     return handle;
   }
 
-  return { LocaleProvider, useLocale };
+  return { Provider, useLocale };
 }
