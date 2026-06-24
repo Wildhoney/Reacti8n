@@ -1,0 +1,66 @@
+{
+  "name": "reacti8n",
+  "version": "0.1.0",
+  "description": "Tiny, type-safe, message-first i18n for React with no DSL.",
+  "type": "module",
+  "main": "./dist/reacti8n.cjs",
+  "module": "./dist/reacti8n.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/reacti8n.js",
+      "require": "./dist/reacti8n.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "keywords": [
+    "i18n",
+    "react",
+    "localization",
+    "internationalization",
+    "intl",
+    "typescript"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wildhoney/Reacti8n.git"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "optionalDependencies": {
+    "@formatjs/intl-localematcher": "^0.6.1",
+    "@formatjs/intl-pluralrules": "^6.3.10"
+  },
+  "devDependencies": {
+    "@formatjs/intl-localematcher": "^0.6.1",
+    "@formatjs/intl-pluralrules": "^6.3.10",
+    "@testing-library/jest-dom": "^6.5.0",
+    "@testing-library/react": "^16.0.1",
+    "@types/node": "^22.5.4",
+    "@types/react": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "@vitest/coverage-v8": "^2.1.1",
+    "jsdom": "^25.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.5",
+    "vite-plugin-dts": "^4.2.1",
+    "vitest": "^2.1.1"
+  }
+}
