@@ -14,6 +14,10 @@
   </a>
 </p>
 
+<p align="center">
+  <a href="https://wildhoney.github.io/Reacti8n/"><strong>View demo →</strong></a>
+</p>
+
 ## Contents
 
 - [Benefits](#benefits)
@@ -29,7 +33,7 @@
 - [Interpolating components](#interpolating-components)
 - [Resolved-locale metadata](#resolved-locale-metadata)
 - [Strict mode](#strict-mode)
-- [Testing](#testing)
+- [Unit testing](#unit-testing)
 - [Fallback observability](#fallback-observability)
 
 ## Benefits
@@ -370,7 +374,7 @@ i18n.dictionary({
 
 Strict mode is purely a compile-time constraint — the runtime is identical. Reach for it once the locale set is stable to catch missing translations at build time rather than via the `onFallback` callback.
 
-## Testing
+## Unit testing
 
 ### Wrapping the provider
 

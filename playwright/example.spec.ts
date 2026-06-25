@@ -72,7 +72,10 @@ test.describe("Reacti8n example", () => {
     }) => {
       await context.addInitScript(
         ([key]) =>
-          sessionStorage.setItem(key as string, "totally-not-a-real-locale-xyz"),
+          sessionStorage.setItem(
+            key as string,
+            "totally-not-a-real-locale-xyz",
+          ),
         [STORAGE_KEY],
       );
       await page.goto("/");

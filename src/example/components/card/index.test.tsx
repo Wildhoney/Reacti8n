@@ -26,9 +26,7 @@ describe("<Card />", () => {
 
   it("switches currency and copy when the locale changes", () => {
     renderWith(Locale.Fr);
-    expect(screen.getByTestId("coffee-espresso-price")).toHaveTextContent(
-      /€/u,
-    );
+    expect(screen.getByTestId("coffee-espresso-price")).toHaveTextContent(/€/u);
     expect(screen.getByTestId("coffee-espresso-description")).toHaveTextContent(
       /café/i,
     );

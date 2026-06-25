@@ -31,7 +31,7 @@ export function Card({ id }: Props) {
       >
         {description}
       </Typography.Paragraph>
-      
+
       <Typography.Text
         strong
         className={styles.price}
