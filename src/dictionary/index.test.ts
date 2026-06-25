@@ -181,4 +181,76 @@ describe("Dictionary.resolve()", () => {
     dict.resolve("fr");
     expect(callback).not.toHaveBeenCalled();
   });
+
+  it("attaches direction + locale metadata to resolved Template callables", () => {
+    const arLocales = ["en", "ar"] as const;
+    const arDict = makeDictionary<"en" | "ar">(arLocales);
+    const arTemplate = makeTemplate<"en" | "ar">();
+    const dict = arDict({
+      greet: arTemplate<{ name: string }>({
+        en({ tokens }) {
+          return `Hello, ${tokens.name}`;
+        },
+        ar({ tokens }) {
+          return `مرحباً، ${tokens.name}`;
+        },
+      }),
+    });
+
+    const ltr = dict.resolve("en").greet;
+    expect(ltr.direction).toBe("ltr");
+    expect(ltr.locale.language).toBe("en");
+
+    const rtl = dict.resolve("ar").greet;
+    expect(rtl.direction).toBe("rtl");
+    expect(rtl.locale.language).toBe("ar");
+  });
+
+  it("reports the resolved (not requested) locale on a Template fallback", () => {
+    const arLocales = ["ar", "fr"] as const;
+    const dict = makeDictionary<"ar" | "fr">(arLocales)({
+      farewell: makeTemplate<"ar" | "fr">()<{ name: string }>({
+        fr({ tokens }) {
+          return `Au revoir, ${tokens.name}`;
+        },
+      }),
+    });
+
+    const resolved = dict.resolve("ar").farewell;
+    expect(resolved.direction).toBe("ltr");
+    expect(resolved.locale.language).toBe("fr");
+    expect(resolved({ name: "Imogen" })).toBe("Au revoir, Imogen");
+  });
+
+  it("falls back to a known-RTL language list when Intl.Locale.textInfo is unavailable", () => {
+    const original = Object.getOwnPropertyDescriptor(
+      Intl.Locale.prototype,
+      "textInfo",
+    );
+    Object.defineProperty(Intl.Locale.prototype, "textInfo", {
+      get: () => undefined,
+      configurable: true,
+    });
+
+    try {
+      const dict = makeDictionary<"en" | "ar">(["en", "ar"] as const)({
+        greet: makeTemplate<"en" | "ar">()<{ name: string }>({
+          en({ tokens }) {
+            return `Hello, ${tokens.name}`;
+          },
+          ar({ tokens }) {
+            return `مرحباً، ${tokens.name}`;
+          },
+        }),
+      });
+      expect(dict.resolve("ar").greet.direction).toBe("rtl");
+      expect(dict.resolve("en").greet.direction).toBe("ltr");
+    } finally {
+      if (original !== undefined) {
+        Object.defineProperty(Intl.Locale.prototype, "textInfo", original);
+      } else {
+        delete (Intl.Locale.prototype as Record<string, unknown>).textInfo;
+      }
+    }
+  });
 });

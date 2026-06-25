@@ -7,6 +7,7 @@ import type {
   Helpers,
   Input,
   Merged,
+  ResolvedTemplateMeta,
 } from "../types.ts";
 
 /**
@@ -68,54 +69,92 @@ export class Dictionary<L extends string, D extends Input<L, Mode>> {
 
   /**
    * Resolves a single dictionary entry — either a {@link Template} (returns
-   * a helpers-bound callable) or a plain variants map (returns the value
-   * directly).
+   * a helpers-bound callable carrying a {@link ResolvedTemplateMeta}
+   * sidecar) or a plain variants map (returns the value directly).
    */
   #pick(entry: unknown, key: string, locale: L, helpers: Helpers): unknown {
     if (entry instanceof Template) {
-      const formatter = this.#fromVariants(
+      const { value: formatter, resolvedAt } = this.#fromVariants(
         entry.variants as Record<string, unknown>,
         key,
         locale,
       );
       if (typeof formatter === "function") {
-        return (tokens: unknown) =>
+        const callable = (tokens: unknown) =>
           (formatter as Formatter<unknown>)({ tokens, helpers });
+        // Invariant: when formatter is a function, resolvedAt is the locale
+        // whose variant supplied it — it can only be null when the value
+        // was null too, which the typeof guard already rejected.
+        return Object.assign(callable, this.#metaFor(resolvedAt as L));
       }
       return formatter;
     }
     if (isObject(entry)) {
-      return this.#fromVariants(entry as Record<string, unknown>, key, locale);
+      return this.#fromVariants(entry as Record<string, unknown>, key, locale)
+        .value;
     }
     return entry;
   }
 
   /**
    * Walks the configured locale list to find a defined variant, firing
-   * `onFallback` whenever the requested locale was missing.
-   *
-   * Returns `null` when no locale defines the key — the resolved value the
-   * consumer sees in that case is `null` too.
+   * `onFallback` whenever the requested locale was missing. The returned
+   * `resolvedAt` field reports which locale's variant the dictionary
+   * actually used — `null` only when no locale defines the key at all.
    */
   #fromVariants(
     variants: Record<string, unknown>,
     key: string,
     locale: L,
-  ): unknown {
+  ): { value: unknown; resolvedAt: L | null } {
     const active = variants[locale];
-    if (active !== undefined && active !== null) return active;
+    if (active !== undefined && active !== null) {
+      return { value: active, resolvedAt: locale };
+    }
     for (const candidate of this.#locales) {
       if (candidate === locale) continue;
       const value = variants[candidate];
       if (value !== undefined && value !== null) {
         this.#onFallback?.({ key, requested: locale, resolved: candidate });
-        return value;
+        return { value, resolvedAt: candidate };
       }
     }
     this.#onFallback?.({ key, requested: locale, resolved: null });
-    return null;
+    return { value: null, resolvedAt: null };
+  }
+
+  /**
+   * Builds the {@link ResolvedTemplateMeta} sidecar attached to every
+   * resolved template callable. `locale` is a full {@link Intl.Locale}
+   * instance so consumers can reach week info, numbering system, calendar,
+   * etc. via the standard API; `direction` is a shortcut for the common
+   * `textInfo.direction` case, with a known-RTL-language fallback for
+   * runtimes that haven't shipped the Intl Locale Info API yet.
+   */
+  #metaFor(resolvedAt: L): ResolvedTemplateMeta {
+    const intlLocale = new Intl.Locale(resolvedAt);
+    const direction =
+      intlLocale.textInfo?.direction ??
+      (RTL_LANGUAGES.has(intlLocale.language) ? "rtl" : "ltr");
+    return { locale: intlLocale, direction };
   }
 }
+
+/**
+ * Fallback RTL language set used by `#metaFor` when the runtime's
+ * `Intl.Locale.prototype.textInfo` getter isn't available — covers the
+ * widely-deployed RTL scripts. Modern engines never hit this path; it's a
+ * safety net for older Chrome / Safari.
+ */
+const RTL_LANGUAGES: ReadonlySet<string> = new Set([
+  "ar",
+  "fa",
+  "he",
+  "ps",
+  "sd",
+  "ur",
+  "yi",
+]);
 
 /**
  * Narrow type guard distinguishing a plain object from arrays, primitives,

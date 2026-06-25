@@ -27,6 +27,7 @@
   - [Dates and times](#dates-and-times)
 - [Partial coverage](#partial-coverage)
 - [Interpolating components](#interpolating-components)
+- [Resolved-locale metadata](#resolved-locale-metadata)
 - [Strict mode](#strict-mode)
 - [Testing](#testing)
 - [Fallback observability](#fallback-observability)
@@ -313,6 +314,37 @@ function ArticleCount({ count }: ArticleCountProps) {
 ```
 
 String returns inline as text, JSX returns render their tree. The arg type is inferred from the message, so passing the wrong shape is a compile error.
+
+## Resolved-locale metadata
+
+Every resolved template callable carries two read-only properties — `direction` and `locale` — describing the locale that _actually_ backed the resolution. When a consumer asks for Arabic but a message is only defined in French, `copy.greet.direction` is `"ltr"` (French) and `copy.greet.locale.language` is `"fr"`, regardless of `i18n.useLocale().locale`. This is the right value to pass into a `<h1 dir={...}>` because the rendered text matches its actual source locale.
+
+```tsx
+const copy = i18n.useI18n(translations);
+
+return (
+  <article>
+    <h1 dir={copy.greet.direction}>{copy.greet({ name: "Imogen" })}</h1>
+    <p>script: {copy.greet.locale.script ?? "—"}</p>
+    <p>region: {copy.greet.locale.region ?? "—"}</p>
+    <p>numbering: {copy.greet.locale.numberingSystem}</p>
+    <p>first day of week: {copy.greet.locale.weekInfo?.firstDay ?? "—"}</p>
+  </article>
+);
+```
+
+The `locale` field is a full `Intl.Locale` instance, so every locale-specific bit (text direction, week info, numbering system, calendar, hour cycle, language, region, script, …) is reachable via the standard browser API:
+
+```ts
+type ResolvedTemplateMeta = {
+  readonly locale: Intl.Locale;
+  readonly direction: "ltr" | "rtl";
+};
+```
+
+`direction` is a flat shortcut for `locale.textInfo.direction` — the common case is "swap the layout for RTL," which is one read.
+
+Plain string variants (`copy.ok`) remain raw strings and don't carry this metadata — a `string` literal can't sprout properties without boxing. For those, `new Intl.Locale(i18n.useLocale().locale).textInfo.direction` gives you the active locale's direction directly. If you need _resolved-locale_ direction on a non-templated message, wrap it in `i18n.template<{}>({...})` so it becomes a callable that carries `.direction` and `.locale`.
 
 ## Strict mode
 

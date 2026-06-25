@@ -3,6 +3,36 @@ import type { ReactNode } from "react";
 import type { Template } from "./template/index.ts";
 
 /**
+ * Augments {@link Intl.Locale} with the Locale Info API fields TypeScript's
+ * lib hasn't shipped yet (`textInfo`, `weekInfo`, `region`, `script`). All
+ * are implemented in modern Chromium, Firefox, Safari, and Node 18+ — this
+ * declaration just teaches the compiler about them.
+ */
+declare global {
+  namespace Intl {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- module augmentation requires an interface
+    interface Locale {
+      /**
+       * Text direction information — `direction` is `"ltr"` or `"rtl"`.
+       * Optional: not every runtime ships the Intl Locale Info API (older
+       * Chrome / Safari); call sites should handle the `undefined` case.
+       */
+      readonly textInfo?: { readonly direction: "ltr" | "rtl" };
+      /** Week-related info: first day, weekend days, minimum days in week one. */
+      readonly weekInfo?: {
+        readonly firstDay: number;
+        readonly weekend: readonly number[];
+        readonly minimalDays: number;
+      };
+      /** Region subtag (e.g. `"GB"` for `en-GB`), when present. */
+      readonly region?: string;
+      /** Script subtag (e.g. `"Cyrl"` for `uk-Cyrl`), when present. */
+      readonly script?: string;
+    }
+  }
+}
+
+/**
  * Coverage strictness for dictionary entries.
  *
  * In {@link Mode.Loose} (the default) each message must define at least one
@@ -111,8 +141,32 @@ export type Input<L extends string, M extends Mode = Mode.Loose> = Record<
 >;
 
 /**
+ * Metadata attached to a resolved {@link Template} callable, describing the
+ * locale that actually backed the resolution.
+ *
+ * Useful when the requested locale fell back: a consumer asking for Arabic
+ * but served the French variant should render an LTR `<h1 dir="...">`, not
+ * RTL — and `direction` reflects that resolved locale, not the active one.
+ *
+ * `locale` is a full {@link Intl.Locale} instance, so every locale-specific
+ * field (text direction, week info, numbering system, calendar, hour cycle,
+ * language, region, …) is reachable via the standard API.
+ */
+export type ResolvedTemplateMeta = {
+  /** Locale that actually backed the resolution. Falls back to the active
+   * locale only when at least one variant defined the message. */
+  readonly locale: Intl.Locale;
+  /**
+   * Shortcut for `locale.textInfo.direction`. `"rtl"` for Arabic, Hebrew,
+   * Persian, Urdu, etc.; `"ltr"` for everything else.
+   */
+  readonly direction: "ltr" | "rtl";
+};
+
+/**
  * Resolves a single dictionary entry into the value consumers see on the
- * `useI18n(...)` result: callables for {@link Template} entries, the raw
+ * `useI18n(...)` result: callables for {@link Template} entries (carrying
+ * a {@link ResolvedTemplateMeta} sidecar on the function itself), the raw
  * value for plain variants.
  *
  * @typeParam L - Locale union for this i18n instance.
@@ -120,7 +174,7 @@ export type Input<L extends string, M extends Mode = Mode.Loose> = Record<
  */
 export type Resolved<L extends string, E> =
   E extends Template<L, infer Args>
-    ? (args: Args) => ReactNode
+    ? ((args: Args) => ReactNode) & ResolvedTemplateMeta
     : E extends Variants<L, infer V>
       ? V
       : E;
