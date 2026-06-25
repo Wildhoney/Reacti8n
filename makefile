@@ -13,6 +13,9 @@ typecheck:
 build:
 	pnpm run build
 
+example:
+	pnpm run build:example
+
 fmt:
 	npx prettier --write .
 

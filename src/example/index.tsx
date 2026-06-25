@@ -1,21 +1,26 @@
 import "@ant-design/v5-patch-for-react-19";
-import { StrictMode } from "react";
+import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./app";
-import { i18n } from "./i18n";
+import { Locale, i18n } from "./i18n";
 
 const root = document.getElementById("root");
 if (root === null) {
   throw new Error('Reacti8n example: missing <div id="root" />.');
 }
 
-const detected = i18n.detect();
+function Root() {
+  const [locale, setLocale] = useState<Locale>(() => i18n.detect());
+  return (
+    <i18n.Provider locale={locale} onLocaleChange={setLocale}>
+      <App />
+    </i18n.Provider>
+  );
+}
 
 createRoot(root).render(
   <StrictMode>
-    <i18n.Provider locale={detected}>
-      <App />
-    </i18n.Provider>
+    <Root />
   </StrictMode>,
 );

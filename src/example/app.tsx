@@ -70,23 +70,25 @@ export function App() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "0 32px",
-            height: 72,
+            gap: 24,
+            padding: "16px 32px",
+            height: "auto",
+            lineHeight: "normal",
           }}
         >
-          <Space direction="vertical" size={0}>
-            <Title level={3} style={{ margin: 0 }}>
+          <Space direction="vertical" size={2} style={{ minWidth: 0, flex: 1 }}>
+            <Title level={3} style={{ margin: 0, lineHeight: 1.2 }}>
               {copy.appTitle}
             </Title>
-            <Text type="secondary" style={{ fontSize: 13 }}>
+            <Text type="secondary" style={{ fontSize: 13, lineHeight: 1.4 }}>
               {copy.tagline}
             </Text>
           </Space>
-          <Space size="middle" align="center">
+          <Space size="middle" align="center" style={{ flexShrink: 0 }}>
             <Text type="secondary">{copy.languageLabel}</Text>
             <Select
               value={locale}
-              onChange={(next) => setLocale(next)}
+              onChange={setLocale}
               options={languageOptions}
               style={{ width: 160 }}
               data-testid="language-select"
