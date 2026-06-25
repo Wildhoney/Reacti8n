@@ -1,3 +1,5 @@
+import { createElement, type ReactElement, type ReactNode } from "react";
+
 import { makeDetect } from "../detect/index.ts";
 import { Dictionary } from "../dictionary/index.ts";
 import { makeHooks } from "../hooks/index.ts";
@@ -51,5 +53,10 @@ export class I18n<const L extends string, M extends Mode = Mode.Loose> {
 
   template<Args>(variants: Variants<L, Formatter<Args>, M>): Template<L, Args> {
     return new Template<L, Args>(variants as Variants<L, Formatter<unknown>>);
+  }
+
+  withI18n(locale: L, element: ReactNode): ReactElement {
+    // eslint-disable-next-line react/no-children-prop -- typed createElement overload requires children in the props object.
+    return createElement(this.Provider, { locale, children: element });
   }
 }

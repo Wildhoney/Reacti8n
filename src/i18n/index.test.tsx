@@ -1,4 +1,4 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, render, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 
@@ -163,5 +163,29 @@ describe("new I18n() with Mode.Strict", () => {
         return `Hello, ${tokens.name}`;
       },
     });
+  });
+});
+
+describe("i18n.withI18n()", () => {
+  function LocaleProbe() {
+    const { locale } = i18n.useLocale();
+    return <span data-testid="locale">{locale}</span>;
+  }
+
+  function GreetProbe({ name }: { name: string }) {
+    const copy = i18n.useI18n(translations);
+    return <span data-testid="greet">{copy.greet({ name })}</span>;
+  }
+
+  it("renders the element inside a Provider bound to the given locale", () => {
+    const { getByTestId } = render(i18n.withI18n("fr", <LocaleProbe />));
+    expect(getByTestId("locale")).toHaveTextContent("fr");
+  });
+
+  it("makes useI18n resolve against the chosen locale", () => {
+    const { getByTestId } = render(
+      i18n.withI18n("de", <GreetProbe name="Imogen" />),
+    );
+    expect(getByTestId("greet")).toHaveTextContent("Hallo, Imogen");
   });
 });

@@ -28,6 +28,7 @@
 - [Partial coverage](#partial-coverage)
 - [Interpolating components](#interpolating-components)
 - [Strict mode](#strict-mode)
+- [Testing](#testing)
 - [Fallback observability](#fallback-observability)
 
 ## Benefits
@@ -330,6 +331,28 @@ i18n.dictionary({
 ```
 
 Strict mode is purely a compile-time constraint — the runtime is identical. Reach for it once the locale set is stable to catch missing translations at build time rather than via the `onFallback` callback.
+
+## Testing
+
+`i18n.withI18n(locale, element)` wraps any React element in the provider, bound to the given locale. It returns a `ReactElement` you can pass straight to your renderer of choice — no wrapper boilerplate, no separate `<Provider>` import in every test file:
+
+```tsx
+import { render, screen } from "@testing-library/react";
+import { i18n } from "./i18n";
+import { Welcome } from "./Welcome";
+
+it("greets in French", () => {
+  render(i18n.withI18n("fr", <Welcome name="Imogen" />));
+  expect(screen.getByRole("heading")).toHaveTextContent("Bonjour, Imogen");
+});
+
+it("greets in German", () => {
+  render(i18n.withI18n("de", <Welcome name="Imogen" />));
+  expect(screen.getByRole("heading")).toHaveTextContent("Hallo, Imogen");
+});
+```
+
+`locale` is typed against your configured locale union, so passing an unsupported locale is a compile error. The helper is just `createElement(this.Provider, { locale }, element)` under the hood — no dependency on `@testing-library/react`, so it composes with any React renderer (RTL, `react-test-renderer`, Ink, etc.).
 
 ## Fallback observability
 
