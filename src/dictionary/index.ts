@@ -1,6 +1,5 @@
 import { makeHelpers } from "../helpers/index.ts";
 import { Template } from "../template/index.ts";
-import { Mode } from "../types.ts";
 import type {
   FallbackHandler,
   Formatter,
@@ -22,7 +21,7 @@ import type {
  * @typeParam D - Original dictionary input shape — used to preserve per-key
  * typing through resolution.
  */
-export class Dictionary<L extends string, D extends Input<L, Mode>> {
+export class Dictionary<L extends string, D extends Input<L>> {
   readonly #entries: D;
   readonly #locales: readonly L[];
   readonly #onFallback?: FallbackHandler<L>;
@@ -60,7 +59,7 @@ export class Dictionary<L extends string, D extends Input<L, Mode>> {
     const resolved = Object.fromEntries(
       Object.entries(this.#entries).map(([key, entry]) => [
         key,
-        this.#pick(entry, key, locale, helpers),
+        this.#pick(entry as Template<L, unknown>, key, locale, helpers),
       ]),
     ) as Merged<L, D>;
     this.#cache.set(locale, resolved);
@@ -68,32 +67,24 @@ export class Dictionary<L extends string, D extends Input<L, Mode>> {
   }
 
   /**
-   * Resolves a single dictionary entry — either a {@link Template} (returns
-   * a helpers-bound callable carrying a {@link ResolvedTemplateMeta}
-   * sidecar) or a plain variants map (returns the value directly).
+   * Resolves a single {@link Template} entry into a helpers-bound callable
+   * carrying a {@link ResolvedTemplateMeta} sidecar. Non-Template values are
+   * rejected by the type system at `i18n.dictionary(...)`; the runtime check
+   * is a defensive guard rather than a supported branch.
    */
-  #pick(entry: unknown, key: string, locale: L, helpers: Helpers): unknown {
-    if (entry instanceof Template) {
-      const { value: formatter, resolvedAt } = this.#fromVariants(
-        entry.variants as Record<string, unknown>,
-        key,
-        locale,
-      );
-      if (typeof formatter === "function") {
-        const callable = (tokens: unknown = {}) =>
-          (formatter as Formatter<unknown>)({ tokens, helpers });
-        // Invariant: when formatter is a function, resolvedAt is the locale
-        // whose variant supplied it — it can only be null when the value
-        // was null too, which the typeof guard already rejected.
-        return Object.assign(callable, this.#metaFor(resolvedAt as L));
-      }
-      return formatter;
-    }
-    if (isObject(entry)) {
-      return this.#fromVariants(entry as Record<string, unknown>, key, locale)
-        .value;
-    }
-    return entry;
+  #pick(entry: Template<L, unknown>, key: string, locale: L, helpers: Helpers) {
+    const { value: formatter, resolvedAt } = this.#fromVariants(
+      entry.variants as Record<string, unknown>,
+      key,
+      locale,
+    );
+    if (typeof formatter !== "function") return null;
+    const callable = (tokens: unknown = {}) =>
+      (formatter as Formatter<unknown>)({ tokens, helpers });
+    // Invariant: when formatter is a function, resolvedAt is the locale
+    // whose variant supplied it — it can only be null when the value was
+    // null too, which the typeof guard already rejected.
+    return Object.assign(callable, this.#metaFor(resolvedAt as L));
   }
 
   /**
@@ -155,15 +146,6 @@ const RTL_LANGUAGES: ReadonlySet<string> = new Set([
   "ur",
   "yi",
 ]);
-
-/**
- * Narrow type guard distinguishing a plain object from arrays, primitives,
- * and `null`. Used by {@link Dictionary} to decide whether an entry is a
- * variants map.
- */
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
 
 /**
  * Curried alternative to constructing {@link Dictionary} directly — captures

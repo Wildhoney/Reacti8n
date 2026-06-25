@@ -19,8 +19,12 @@ const translations = i18n.dictionary({
       return `Hallo, ${tokens.name}`;
     },
   }),
-  ok: { en: "OK", fr: "Accepter", de: "OK" },
-  auRevoir: { fr: "Au revoir" },
+  ok: i18n.template({
+    en: () => "OK",
+    fr: () => "Accepter",
+    de: () => "OK",
+  }),
+  auRevoir: i18n.template({ fr: () => "Au revoir" }),
   balance: i18n.template<{ amount: number }>({
     en({ tokens, helpers }) {
       return `Balance: ${helpers
@@ -50,11 +54,11 @@ describe("new I18n()", () => {
     expect(() => new I18n({ locales: [] })).toThrow(/at least one locale/i);
   });
 
-  it("resolves plain string entries via the hooks", () => {
+  it("resolves token-less Template entries via the hooks", () => {
     const { result } = renderHook(() => i18n.useI18n(translations), {
       wrapper: wrap("fr"),
     });
-    expect(result.current.ok).toBe("Accepter");
+    expect(result.current.ok()).toBe("Accepter");
   });
 
   it("resolves Template entries with args", () => {
@@ -77,7 +81,7 @@ describe("new I18n()", () => {
     const { result } = renderHook(() => i18n.useI18n(translations), {
       wrapper: wrap("en"),
     });
-    expect(result.current.auRevoir).toBe("Au revoir");
+    expect(result.current.auRevoir()).toBe("Au revoir");
   });
 
   it("lets the consumer override the locale at runtime", () => {
@@ -88,9 +92,9 @@ describe("new I18n()", () => {
       }),
       { wrapper: wrap() },
     );
-    expect(result.current.translations.ok).toBe("OK");
+    expect(result.current.translations.ok()).toBe("OK");
     act(() => result.current.handle.setLocale("fr"));
-    expect(result.current.translations.ok).toBe("Accepter");
+    expect(result.current.translations.ok()).toBe("Accepter");
   });
 
   it("matches the detected locale against the supported set", () => {
@@ -111,14 +115,14 @@ describe("new I18n()", () => {
       onFallback: (event) => events.push(event),
     });
     const dict = scoped.dictionary({
-      auRevoir: { fr: "Au revoir" },
+      auRevoir: scoped.template({ fr: () => "Au revoir" }),
     });
     const { result } = renderHook(() => scoped.useI18n(dict), {
       wrapper: ({ children }: { children: ReactNode }) => (
         <scoped.Provider locale="en">{children}</scoped.Provider>
       ),
     });
-    expect(result.current.auRevoir).toBe("Au revoir");
+    expect(result.current.auRevoir()).toBe("Au revoir");
     expect(events).toEqual([
       { key: "auRevoir", requested: "en", resolved: "fr" },
     ]);
@@ -130,11 +134,11 @@ describe("new I18n() with Mode.Strict", () => {
     locales: ["en", "fr"] as const,
   });
 
-  it("compiles when every locale defines a plain variant", () => {
+  it("compiles when every locale defines a token-less Template", () => {
     const dict = strict.dictionary({
-      ok: { en: "OK", fr: "Accepter" },
+      ok: strict.template({ en: () => "OK", fr: () => "Accepter" }),
     });
-    expect(dict.resolve("en").ok).toBe("OK");
+    expect(dict.resolve("en").ok()).toBe("OK");
   });
 
   it("compiles when every locale defines a Template variant", () => {
@@ -149,11 +153,6 @@ describe("new I18n() with Mode.Strict", () => {
       }),
     });
     expect(dict.resolve("en").greet({ name: "Imogen" })).toBe("Hello, Imogen");
-  });
-
-  it("rejects partial plain variants at the type level", () => {
-    // @ts-expect-error - fr locale is missing in strict mode
-    strict.dictionary({ partial: { en: "OK" } });
   });
 
   it("rejects partial Template variants at the type level", () => {

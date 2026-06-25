@@ -140,7 +140,7 @@ Candidates are tried in order. Non-strings are skipped, primary tags (`fr-CA` �
 
 ## Defining messages
 
-A dictionary is a flat record of message-id → variants. Each entry is either a plain `{ en, fr, ... }` map or an `i18n.template<Args>({ ... })` wrapper for messages that take arguments. Template formatters receive a single `{ tokens, helpers }` payload — `tokens` is the typed args object you pass at the call site; `helpers` is locale-bound and exposes `numberFormat`, `dateTimeFormat`, and `pluralRules` factories that return `Intl` instances.
+A dictionary is a flat record of message-id → `i18n.template<Args>({ ... })`. Every entry must be a template — even a token-less constant string — so every resolved value is a callable carrying `.direction` / `.locale` metadata. The `Args` generic defaults to `object`, so messages with no tokens omit both the generic and the call-site arguments. Template formatters receive a single `{ tokens, helpers }` payload — `tokens` is the typed args object you pass at the call site; `helpers` is locale-bound and exposes `numberFormat`, `dateTimeFormat`, and `pluralRules` factories that return `Intl` instances.
 
 ```ts
 import { i18n } from "./i18n";
@@ -150,7 +150,11 @@ namespace Tokens {
 }
 
 export const translations = i18n.dictionary({
-  ok: { [Locale.En]: "OK", [Locale.Fr]: "OK", [Locale.De]: "OK" },
+  ok: i18n.template({
+    [Locale.En]: () => "OK",
+    [Locale.Fr]: () => "OK",
+    [Locale.De]: () => "OK",
+  }),
 
   greet: i18n.template<Tokens.Greet>({
     [Locale.En]({ tokens }) {
@@ -182,13 +186,13 @@ export function Welcome({ name }: WelcomeProps) {
   return (
     <section>
       <h1>{copy.greet({ name })}</h1>
-      <p>{copy.ok}</p>
+      <p>{copy.ok()}</p>
     </section>
   );
 }
 ```
 
-Plain string entries become strings on the resolved object. Template entries become callables typed with their declared `Args` — the `helpers` are bound automatically based on the active locale.
+Every resolved entry is a callable typed by its declared `Args`. Token-less messages (`copy.ok()`) take no arguments; templated messages (`copy.greet({ name })`) require their typed `tokens` object. `helpers` are bound automatically based on the active locale.
 
 ## Helpers
 
@@ -272,7 +276,7 @@ sentOn: i18n.template<Tokens.SentOn>({
 In the default `Mode.Loose`, partial coverage is fine — the runtime walks the configured `locales` list in order, and the type system only requires at least one variant to be defined. A request for a missing locale resolves via the fallback chain and fires the `onFallback` callback.
 
 ```ts
-auRevoir: { fr: "Au revoir" },
+auRevoir: i18n.template({ [Locale.Fr]: () => "Au revoir" }),
 ```
 
 A consumer requesting `en` resolves `auRevoir` to the `fr` variant and the callback fires with `{ key: "auRevoir", requested: Locale.En, resolved: Locale.Fr }`.
@@ -348,7 +352,7 @@ type ResolvedTemplateMeta = {
 
 `direction` is a flat shortcut for `locale.textInfo.direction` — the common case is "swap the layout for RTL," which is one read.
 
-Plain string variants (`copy.ok`) remain raw strings and don't carry this metadata — a `string` literal can't sprout properties without boxing. For those, `new Intl.Locale(i18n.useLocale().locale).textInfo.direction` gives you the active locale's direction directly. If you need _resolved-locale_ direction on a non-templated message, wrap it in `i18n.template({ ... })` so it becomes a callable that carries `.direction` and `.locale` — the `Args` generic defaults to `object`, so you can omit both the type parameter and the call-site arguments:
+Because every dictionary entry is an `i18n.template({ ... })`, this metadata is always present — even on token-less messages. The `Args` generic defaults to `object`, so you can omit both the type parameter and the call-site arguments:
 
 ```tsx
 export const translations = i18n.dictionary({
@@ -384,7 +388,7 @@ export const i18n = new I18n<Locale.Set, Mode.Strict>({
 });
 
 i18n.dictionary({
-  auRevoir: { [Locale.Fr]: "Au revoir" },
+  auRevoir: i18n.template({ [Locale.Fr]: () => "Au revoir" }),
 });
 ```
 
@@ -430,12 +434,12 @@ it("renders the French copy and reports the fallback", () => {
     onFallback,
   });
   const translations = scoped.dictionary({
-    auRevoir: { [Locale.Fr]: "Au revoir" },
+    auRevoir: scoped.template({ [Locale.Fr]: () => "Au revoir" }),
   });
 
   function Probe() {
     const copy = scoped.useI18n(translations);
-    return <span>{copy.auRevoir}</span>;
+    return <span>{copy.auRevoir()}</span>;
   }
 
   render(scoped.withI18n(Locale.En, <Probe />));

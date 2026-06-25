@@ -104,17 +104,18 @@ export class I18n<const L extends string, M extends Mode = Mode.Loose> {
 
   /**
    * Builds a typed {@link Dictionary} from a flat record of message-id →
-   * entry.
+   * {@link Template}. Every entry must be wrapped in {@link I18n.template} —
+   * plain `{ en: "OK" }` maps are rejected at compile time so every resolved
+   * value is a callable carrying `.direction` / `.locale` metadata.
    *
    * @typeParam D - Inferred dictionary shape; preserves per-key argument
    * types.
-   * @param entries - Object literal whose values are either plain
-   * locale-variant maps or {@link Template} wrappers produced by
-   * {@link I18n.template}.
+   * @param entries - Object literal whose values are {@link Template}
+   * wrappers produced by {@link I18n.template}.
    * @returns A {@link Dictionary} instance that `useI18n` will resolve
    * against the active locale.
    */
-  dictionary<D extends Input<L, M>>(entries: D): Dictionary<L, D> {
+  dictionary<D extends Input<L>>(entries: D): Dictionary<L, D> {
     return new Dictionary<L, D>(this.locales, entries, this.#onFallback);
   }
 

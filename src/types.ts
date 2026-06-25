@@ -117,28 +117,22 @@ export type Variants<
 > = M extends Mode.Strict ? Record<L, V> : AtLeastOne<Record<L, V>>;
 
 /**
- * A single dictionary entry: either a {@link Template} wrapper (for messages
- * with typed arguments) or a plain {@link Variants} map (for static strings
- * or other constant values).
+ * A single dictionary entry: a {@link Template} wrapper. Every message — even
+ * a token-less constant string — must be wrapped in `i18n.template({ ... })`
+ * so the resolved value is always a callable carrying the
+ * {@link ResolvedTemplateMeta} sidecar (`.direction`, `.locale`).
  *
  * @typeParam L - Locale union for this i18n instance.
- * @typeParam M - Coverage strictness — defaults to {@link Mode.Loose}.
  */
-export type Entry<L extends string, M extends Mode = Mode.Loose> =
-  | Template<L, unknown>
-  | Variants<L, unknown, M>;
+export type Entry<L extends string> = Template<L, unknown>;
 
 /**
  * Shape of the object passed to `i18n.dictionary(...)`: a flat record of
- * message-id → entry.
+ * message-id → {@link Template}.
  *
  * @typeParam L - Locale union for this i18n instance.
- * @typeParam M - Coverage strictness — defaults to {@link Mode.Loose}.
  */
-export type Input<L extends string, M extends Mode = Mode.Loose> = Record<
-  string,
-  Entry<L, M>
->;
+export type Input<L extends string> = Record<string, Entry<L>>;
 
 /**
  * Metadata attached to a resolved {@link Template} callable, describing the
@@ -165,9 +159,9 @@ export type ResolvedTemplateMeta = {
 
 /**
  * Resolves a single dictionary entry into the value consumers see on the
- * `useI18n(...)` result: callables for {@link Template} entries (carrying
- * a {@link ResolvedTemplateMeta} sidecar on the function itself), the raw
- * value for plain variants.
+ * `useI18n(...)` result: a callable for the {@link Template} entry, carrying
+ * a {@link ResolvedTemplateMeta} sidecar (`.direction`, `.locale`) on the
+ * function itself.
  *
  * The callable's `args` parameter is optional when `Args` is satisfied by
  * `{}` — i.e. token-less templates (default `Args = object`) and templates
@@ -175,16 +169,14 @@ export type ResolvedTemplateMeta = {
  * token, the parameter becomes required at the call site.
  *
  * @typeParam L - Locale union for this i18n instance.
- * @typeParam E - Entry type to resolve.
+ * @typeParam E - Entry type to resolve (must be a {@link Template}).
  */
 export type Resolved<L extends string, E> =
   E extends Template<L, infer Args>
     ? Record<string, never> extends Args
       ? ((args?: Args) => ReactNode) & ResolvedTemplateMeta
       : ((args: Args) => ReactNode) & ResolvedTemplateMeta
-    : E extends Variants<L, infer V>
-      ? V
-      : E;
+    : never;
 
 /**
  * Resolves every entry of a dictionary input into its consumer-facing shape

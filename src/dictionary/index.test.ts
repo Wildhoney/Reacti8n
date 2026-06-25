@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { Dictionary, makeDictionary } from "./index.ts";
+import { makeDictionary } from "./index.ts";
 import { makeTemplate } from "../template/index.ts";
 import type { FallbackEvent } from "../types.ts";
 
@@ -9,19 +9,19 @@ const dictionary = makeDictionary<"en" | "fr">(locales);
 const template = makeTemplate<"en" | "fr">();
 
 describe("Dictionary.resolve()", () => {
-  it("returns the active locale's variant for plain string entries", () => {
+  it("returns the active locale's variant for token-less templates", () => {
     const dict = dictionary({
-      ok: { en: "OK", fr: "Accepter" },
+      ok: template({ en: () => "OK", fr: () => "Accepter" }),
     });
-    expect(dict.resolve("en").ok).toBe("OK");
-    expect(dict.resolve("fr").ok).toBe("Accepter");
+    expect(dict.resolve("en").ok()).toBe("OK");
+    expect(dict.resolve("fr").ok()).toBe("Accepter");
   });
 
   it("falls back to any defined locale when the active one is missing", () => {
     const dict = dictionary({
-      auRevoir: { fr: "Au revoir" },
+      auRevoir: template({ fr: () => "Au revoir" }),
     });
-    expect(dict.resolve("en").auRevoir).toBe("Au revoir");
+    expect(dict.resolve("en").auRevoir()).toBe("Au revoir");
   });
 
   it("invokes Template variants with the supplied args", () => {
@@ -108,27 +108,11 @@ describe("Dictionary.resolve()", () => {
   });
 
   it("memoises the resolved object per locale", () => {
-    const dict = dictionary({ ok: { en: "OK", fr: "Accepter" } });
+    const dict = dictionary({
+      ok: template({ en: () => "OK", fr: () => "Accepter" }),
+    });
     expect(dict.resolve("en")).toBe(dict.resolve("en"));
     expect(dict.resolve("en")).not.toBe(dict.resolve("fr"));
-  });
-
-  it("returns null when no variant is defined for any locale", () => {
-    const dict = new Dictionary<"en" | "fr", { broken: { en: string } }>(
-      locales,
-      // @ts-expect-error - exercising the runtime fallback for empty variants
-      { broken: {} },
-    );
-    expect(dict.resolve("en").broken).toBeNull();
-  });
-
-  it("returns primitive entries as-is when they aren't Templates or objects", () => {
-    const dict = new Dictionary<"en" | "fr", { stray: { en: number } }>(
-      locales,
-      // @ts-expect-error - exercising the runtime branch for non-Entry values
-      { stray: 42 },
-    );
-    expect(dict.resolve("en").stray).toBe(42);
   });
 
   it("returns null from a Template when no variant is defined anywhere", () => {
@@ -160,12 +144,12 @@ describe("Dictionary.resolve()", () => {
 
   it("invokes onFallback with resolved=null when no locale defines the key", () => {
     const events: FallbackEvent<"en" | "fr">[] = [];
-    const dict = new Dictionary<"en" | "fr", { broken: { en: string } }>(
-      locales,
-      // @ts-expect-error - exercising the runtime fallback for empty variants
-      { broken: {} },
-      (event) => events.push(event),
+    const localDictionary = makeDictionary<"en" | "fr">(locales, (event) =>
+      events.push(event),
     );
+    // @ts-expect-error - intentionally empty to exercise the resolve-null path
+    const empty = template<{ name: string }>({});
+    const dict = localDictionary({ broken: empty });
     expect(dict.resolve("en").broken).toBeNull();
     expect(events).toEqual([
       { key: "broken", requested: "en", resolved: null },
@@ -176,7 +160,7 @@ describe("Dictionary.resolve()", () => {
     const callback = vi.fn();
     const localDictionary = makeDictionary<"en" | "fr">(locales, callback);
     const dict = localDictionary({
-      ok: { en: "OK", fr: "Accepter" },
+      ok: template({ en: () => "OK", fr: () => "Accepter" }),
     });
     dict.resolve("fr");
     expect(callback).not.toHaveBeenCalled();
