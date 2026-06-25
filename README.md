@@ -2,9 +2,11 @@
   <img src="./media/logo.png" alt="Reacti8n — Tower of Babel" width="640" />
 </p>
 
-# Reacti8n
+<h1 align="center">Reacti8n</h1>
 
-> Tiny, type-safe, message-first i18n for React. No DSL, no ICU runtime, no codegen — translations are plain TypeScript functions.
+<p align="center">
+  <em>Tiny, type-safe, message-first i18n for React. No DSL, no ICU runtime, no codegen — translations are plain TypeScript functions.</em>
+</p>
 
 - Plain TS / JS — interpolation is template literals; `Intl.NumberFormat`, `Intl.DateTimeFormat`, and `Intl.PluralRules` are injected per formatter.
 - Type-safe arguments — `template<{ name: string }>({...})` enforces the argument shape across every locale.
