@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Card,
   Col,
@@ -9,6 +10,7 @@ import {
   Typography,
   theme,
 } from "antd";
+import { CircleFlag } from "react-circle-flags";
 
 import { Locale, i18n } from "./i18n";
 import { dictionary } from "./dictionary";
@@ -25,19 +27,54 @@ const menu = [
   { id: "flatWhite", price: 3.85, emoji: "🤍" },
 ] as const;
 
-const languageOptions = [
-  { value: Locale.En, label: "English" },
-  { value: Locale.Fr, label: "Français" },
-  { value: Locale.De, label: "Deutsch" },
-  { value: Locale.It, label: "Italiano" },
-  { value: Locale.Es, label: "Español" },
-];
+const FLAG_FOR: Record<Locale, string> = {
+  [Locale.En]: "gb",
+  [Locale.Fr]: "fr",
+  [Locale.De]: "de",
+  [Locale.It]: "it",
+  [Locale.Es]: "es",
+  [Locale.Ar]: "ae",
+  [Locale.Ru]: "ru",
+  [Locale.Uk]: "ua",
+  [Locale.Ka]: "ge",
+  [Locale.Zh]: "cn",
+};
+
+const NATIVE_LABEL: Record<Locale, string> = {
+  [Locale.En]: "English",
+  [Locale.Fr]: "Français",
+  [Locale.De]: "Deutsch",
+  [Locale.It]: "Italiano",
+  [Locale.Es]: "Español",
+  [Locale.Ar]: "العربية",
+  [Locale.Ru]: "Русский",
+  [Locale.Uk]: "Українська",
+  [Locale.Ka]: "ქართული",
+  [Locale.Zh]: "中文",
+};
+
+const languageOptions = (Object.keys(NATIVE_LABEL) as Locale[]).map((code) => ({
+  value: code,
+  label: (
+    <Space size={8}>
+      <CircleFlag countryCode={FLAG_FOR[code]} height={18} />
+      <span>{NATIVE_LABEL[code]}</span>
+    </Space>
+  ),
+}));
 
 type CoffeeId = (typeof menu)[number]["id"];
 
 export function App() {
   const { locale, setLocale } = i18n.useLocale();
   const copy = i18n.useI18n(dictionary);
+
+  const direction = copy.price.direction;
+
+  useEffect(() => {
+    document.documentElement.dir = direction;
+    document.documentElement.lang = locale;
+  }, [direction, locale]);
 
   const meta: Record<CoffeeId, { name: string; description: string }> = {
     espresso: {
@@ -61,7 +98,10 @@ export function App() {
   };
 
   return (
-    <ConfigProvider theme={{ algorithm: theme.defaultAlgorithm }}>
+    <ConfigProvider
+      theme={{ algorithm: theme.defaultAlgorithm }}
+      direction={direction}
+    >
       <Layout style={{ minHeight: "100vh", background: "transparent" }}>
         <Header
           style={{
@@ -90,7 +130,7 @@ export function App() {
               value={locale}
               onChange={setLocale}
               options={languageOptions}
-              style={{ width: 160 }}
+              style={{ width: 200 }}
               data-testid="language-select"
             />
           </Space>
@@ -110,7 +150,6 @@ export function App() {
               return (
                 <Col key={entry.id} xs={24} sm={12} lg={8}>
                   <Card
-                    hoverable
                     title={
                       <Space>
                         <span style={{ fontSize: 22 }}>{entry.emoji}</span>

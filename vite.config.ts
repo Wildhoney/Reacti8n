@@ -1,8 +1,26 @@
 /// <reference types="vitest" />
 import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import dts from "vite-plugin-dts";
+
+function serveExample(): Plugin {
+  return {
+    name: "reacti8n-serve-example",
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        const url = req.url ?? "/";
+        const hasExtension = /\.\w+($|\?)/.test(url);
+        const isViteInternal =
+          url.startsWith("/@") || url.startsWith("/node_modules/");
+        if (!hasExtension && !isViteInternal) {
+          req.url = "/src/example/index.html";
+        }
+        next();
+      });
+    },
+  };
+}
 
 export default defineConfig(({ mode }) => {
   const isExample = mode === "example";
@@ -14,9 +32,10 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: isExample
-      ? [react()]
+      ? [react(), serveExample()]
       : [
           react(),
+          serveExample(),
           dts({
             include: ["src/**/*.ts", "src/**/*.tsx"],
             exclude: [

@@ -6,8 +6,24 @@ export enum Locale {
   De = "de",
   It = "it",
   Es = "es",
+  Ar = "ar",
+  Ru = "ru",
+  Uk = "uk",
+  Ka = "ka",
+  Zh = "zh",
 }
 
 export const i18n = new I18n({
-  locales: [Locale.En, Locale.Fr, Locale.De, Locale.It, Locale.Es] as const,
+  locales: [
+    Locale.En,
+    Locale.Fr,
+    Locale.De,
+    Locale.It,
+    Locale.Es,
+    Locale.Ar,
+    Locale.Ru,
+    Locale.Uk,
+    Locale.Ka,
+    Locale.Zh,
+  ] as const,
 });

@@ -14,6 +14,9 @@ build:
 	pnpm run build
 
 example:
+	pnpm dev --open
+
+example-build:
 	pnpm run build:example
 
 fmt:
