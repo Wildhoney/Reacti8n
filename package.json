@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Tiny, type-safe, message-first i18n for React with no DSL.",
   "type": "module",
+  "packageManager": "pnpm@11.9.0",
   "main": "./dist/reacti8n.cjs",
   "module": "./dist/reacti8n.js",
   "types": "./dist/index.d.ts",
