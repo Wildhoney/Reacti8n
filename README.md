@@ -26,7 +26,7 @@
   - [Currency and numbers](#currency-and-numbers)
   - [Dates and times](#dates-and-times)
 - [Partial coverage](#partial-coverage)
-- [Rendering rich messages](#rendering-rich-messages)
+- [Interpolating components](#interpolating-components)
 - [Strict mode](#strict-mode)
 - [Fallback observability](#fallback-observability)
 
@@ -253,7 +253,7 @@ auRevoir: { fr: "Au revoir" },
 
 A consumer requesting `en` resolves `auRevoir` to the `fr` variant and the callback fires with `{ key: "auRevoir", requested: "en", resolved: "fr" }`.
 
-## Rendering rich messages
+## Interpolating components
 
 Template formatters return `ReactNode`, so you can return JSX directly — wrap a count in a styled element, drop a `<Link>` inline, whatever. There is no dedicated `<Trans>` component because there is nothing to wrap: a message _is_ a `(args) => ReactNode` function, so you call it in JSX:
 
@@ -339,16 +339,15 @@ Pipe these into Sentry / Datadog / your logger of choice:
 new I18n({
   locales: ["en", "fr", "de"] as const,
   onFallback({ key, requested, resolved }) {
-    if (resolved === null) {
+    if (resolved === null)
       Sentry.captureException(
         new Error(`i18n key "${key}" is missing in every locale`),
       );
-    } else {
+    else
       Sentry.captureMessage(
         `i18n key "${key}" missing for ${requested}; served ${resolved}`,
         "warning",
       );
-    }
   },
 });
 ```
