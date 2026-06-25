@@ -56,11 +56,17 @@ Configure once in your app entry. The class returns a typed instance scoped to y
 ```ts
 import { I18n } from "reacti8n";
 
+enum Locale {
+  En,
+  Fr,
+  De,
+}
+
 export const i18n = new I18n({
-  locales: ["en", "fr", "de"] as const,
-  onFallback(event) {
+  locales: [Locale.En, Locale.Fr, Locale.De] as const,
+  onFallback(details) {
     Sentry.captureMessage(
-      `i18n fallback: ${event.key} (${event.requested} → ${event.resolved ?? "null"})`,
+      `i18n fallback: ${details.key} (${details.requested} → ${details.resolved ?? "null"})`,
       "warning",
     );
   },
@@ -139,16 +145,16 @@ namespace Template {
 }
 
 export const translations = i18n.dictionary({
-  ok: { en: "OK", fr: "OK", de: "OK" },
+  ok: { [Locale.En]: "OK", [Locale.Fr]: "OK", [Locale.De]: "OK" },
 
   greet: i18n.template<Template.Greet>({
-    en({ tokens }) {
+    [Locale.En]({ tokens }) {
       return `Hello, ${tokens.name}`;
     },
-    fr({ tokens }) {
+    [Locale.Fr]({ tokens }) {
       return `Bonjour, ${tokens.name}`;
     },
-    de({ tokens }) {
+    [Locale.De]({ tokens }) {
       return `Hallo, ${tokens.name}`;
     },
   }),
@@ -193,17 +199,17 @@ namespace Template {
 }
 
 items: i18n.template<Template.Items>({
-  en({ tokens, helpers }) {
+  [Locale.En]({ tokens, helpers }) {
     const category = helpers.pluralRules().select(tokens.count);
     return category === "one" ? "1 item" : `${tokens.count} items`;
   },
-  fr({ tokens, helpers }) {
+  [Locale.Fr]({ tokens, helpers }) {
     const category = helpers.pluralRules().select(tokens.count);
     return category === "one"
       ? `${tokens.count} article`
       : `${tokens.count} articles`;
   },
-  de({ tokens, helpers }) {
+  [Locale.De]({ tokens, helpers }) {
     const category = helpers.pluralRules().select(tokens.count);
     return category === "one" ? "1 Eintrag" : `${tokens.count} Einträge`;
   },
@@ -220,12 +226,12 @@ namespace Template {
 }
 
 balance: i18n.template<Template.Balance>({
-  en({ tokens, helpers }) {
+  [Locale.En]({ tokens, helpers }) {
     return `Balance: ${helpers
       .numberFormat({ style: "currency", currency: "USD" })
       .format(tokens.amount)}`;
   },
-  fr({ tokens, helpers }) {
+  [Locale.Fr]({ tokens, helpers }) {
     return `Solde : ${helpers
       .numberFormat({ style: "currency", currency: "EUR" })
       .format(tokens.amount)}`;
@@ -243,12 +249,12 @@ namespace Template {
 }
 
 sentOn: i18n.template<Template.SentOn>({
-  en({ tokens, helpers }) {
+  [Locale.En]({ tokens, helpers }) {
     return `Sent on ${helpers
       .dateTimeFormat({ dateStyle: "long" })
       .format(tokens.when)}`;
   },
-  fr({ tokens, helpers }) {
+  [Locale.Fr]({ tokens, helpers }) {
     return `Envoyé le ${helpers
       .dateTimeFormat({ dateStyle: "long" })
       .format(tokens.when)}`;
@@ -264,7 +270,7 @@ In the default `Mode.Loose`, partial coverage is fine — the runtime walks the 
 auRevoir: { fr: "Au revoir" },
 ```
 
-A consumer requesting `en` resolves `auRevoir` to the `fr` variant and the callback fires with `{ key: "auRevoir", requested: "en", resolved: "fr" }`.
+A consumer requesting `en` resolves `auRevoir` to the `fr` variant and the callback fires with `{ key: "auRevoir", requested: Locale.En, resolved: Locale.Fr }`.
 
 ## Interpolating components
 
@@ -277,7 +283,7 @@ namespace Template {
 
 export const translations = i18n.dictionary({
   articles: i18n.template<Template.Articles>({
-    en({ tokens, helpers }) {
+    [Locale.En]({ tokens, helpers }) {
       const category = helpers.pluralRules().select(tokens.count);
       return category === "one" ? (
         <P>{tokens.count} article</P>
@@ -285,7 +291,7 @@ export const translations = i18n.dictionary({
         <P>{tokens.count} articles</P>
       );
     },
-    fr({ tokens, helpers }) {
+    [Locale.Fr]({ tokens, helpers }) {
       const category = helpers.pluralRules().select(tokens.count);
       return category === "one" ? (
         <P>{tokens.count} article</P>
@@ -312,27 +318,29 @@ String returns inline as text, JSX returns render their tree. The arg type is in
 
 By default (`Mode.Loose`), the type system requires at least one locale per message — partial coverage compiles and falls back at runtime. Pass `Mode.Strict` as the second generic argument and every dictionary entry must define every locale, with templates needing a formatter for each one.
 
-In the snippet below, the locale set is `"en" | "fr"`. `auRevoir` only defines `fr`, which the compiler rejects in strict mode — the same code is valid under the default `Mode.Loose`.
+In the snippet below, the locale set is `Locale.En | Locale.Fr`. `auRevoir` only defines `fr`, which the compiler rejects in strict mode — the same code is valid under the default `Mode.Loose`.
 
 ```ts
 import { I18n, Mode } from "reacti8n";
 
 namespace Locale {
-  export type Set = "en" | "fr";
+  export type Set = Locale.En | Locale.Fr;
 }
 
 export const i18n = new I18n<Locale.Set, Mode.Strict>({
-  locales: ["en", "fr"] as const,
+  locales: [Locale.En, Locale.Fr] as const,
 });
 
 i18n.dictionary({
-  auRevoir: { fr: "Au revoir" },
+  auRevoir: { [Locale.Fr]: "Au revoir" },
 });
 ```
 
 Strict mode is purely a compile-time constraint — the runtime is identical. Reach for it once the locale set is stable to catch missing translations at build time rather than via the `onFallback` callback.
 
 ## Testing
+
+### Wrapping the provider
 
 `i18n.withI18n(locale, element)` wraps any React element in the provider, bound to the given locale. It returns a `ReactElement` you can pass straight to your renderer of choice — no wrapper boilerplate, no separate `<Provider>` import in every test file:
 
@@ -342,17 +350,54 @@ import { i18n } from "./i18n";
 import { Welcome } from "./Welcome";
 
 it("greets in French", () => {
-  render(i18n.withI18n("fr", <Welcome name="Imogen" />));
+  render(i18n.withI18n(Locale.Fr, <Welcome name="Imogen" />));
   expect(screen.getByRole("heading")).toHaveTextContent("Bonjour, Imogen");
 });
 
 it("greets in German", () => {
-  render(i18n.withI18n("de", <Welcome name="Imogen" />));
+  render(i18n.withI18n(Locale.De, <Welcome name="Imogen" />));
   expect(screen.getByRole("heading")).toHaveTextContent("Hallo, Imogen");
 });
 ```
 
 `locale` is typed against your configured locale union, so passing an unsupported locale is a compile error. The helper is just `createElement(this.Provider, { locale }, element)` under the hood — no dependency on `@testing-library/react`, so it composes with any React renderer (RTL, `react-test-renderer`, Ink, etc.).
+
+### Asserting fallback events
+
+When a test exercises a code path that resolves to a non-requested locale, you usually want to confirm the fallback fired rather than rely on the rendered string alone. Spin up a scoped `I18n` instance with `onFallback` wired to a spy — the production instance stays untouched, and you get a precise record of what fell back where:
+
+```tsx
+import { render, screen } from "@testing-library/react";
+import { vi } from "vitest";
+import { I18n } from "reacti8n";
+
+it("renders the French copy and reports the fallback", () => {
+  const onFallback = vi.fn();
+  const scoped = new I18n({
+    locales: [Locale.En, Locale.Fr] as const,
+    onFallback,
+  });
+  const translations = scoped.dictionary({
+    auRevoir: { [Locale.Fr]: "Au revoir" },
+  });
+
+  function Probe() {
+    const copy = scoped.useI18n(translations);
+    return <span>{copy.auRevoir}</span>;
+  }
+
+  render(scoped.withI18n(Locale.En, <Probe />));
+
+  expect(screen.getByText("Au revoir")).toBeInTheDocument();
+  expect(onFallback).toHaveBeenCalledWith({
+    key: "auRevoir",
+    requested: Locale.En,
+    resolved: Locale.Fr,
+  });
+});
+```
+
+The callback fires synchronously inside `Dictionary.resolve()`, so the spy is populated by the time `render` returns. Use the same pattern with `resolved: null` to assert that a key was missing from every locale — a stronger guarantee than checking the rendered DOM for an empty string.
 
 ## Fallback observability
 
@@ -372,15 +417,15 @@ Pipe these into Sentry / Datadog / your logger of choice:
 
 ```ts
 new I18n({
-  locales: ["en", "fr", "de"] as const,
-  onFallback({ key, requested, resolved }) {
-    if (resolved === null)
+  locales: [Locale.En, Locale.Fr, Locale.De] as const,
+  onFallback(details) {
+    if (details.resolved === null)
       Sentry.captureException(
-        new Error(`i18n key "${key}" is missing in every locale`),
+        new Error(`i18n key "${details.key}" is missing in every locale`),
       );
     else
       Sentry.captureMessage(
-        `i18n key "${key}" missing for ${requested}; served ${resolved}`,
+        `i18n key "${details.key}" missing for ${details.requested}; served ${details.resolved}`,
         "warning",
       );
   },
