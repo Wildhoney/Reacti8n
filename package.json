@@ -54,6 +54,11 @@
     "@formatjs/intl-localematcher": "^0.6.1",
     "@formatjs/intl-pluralrules": "^6.3.10"
   },
+  "commit-and-tag-version": {
+    "scripts": {
+      "postchangelog": "prettier --write CHANGELOG.md"
+    }
+  },
   "devDependencies": {
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@emotion/css": "^11.13.5",
