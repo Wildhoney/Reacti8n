@@ -8,17 +8,9 @@
   <em>Tiny, type-safe, message-first i18n for React. No DSL, no ICU runtime, no codegen — translations are plain TypeScript functions.</em>
 </p>
 
-- Plain TS / JS — interpolation is template literals; `Intl.NumberFormat`, `Intl.DateTimeFormat`, and `Intl.PluralRules` are injected per formatter.
-- Type-safe arguments — `template<{ name: string }>({...})` enforces the argument shape across every locale.
-- Message-first nesting — each message lives next to its translations.
-- At-least-one locale — the type system rejects empty entries; the runtime walks the configured `locales` list in order to find a defined variant.
-- Strict mode opt-in — pass `Mode.Strict` and the type system enforces every locale on every message.
-- Rich messages — formatters return `ReactNode`, so JSX (links, styled spans, icons) embeds inline without a wrapper component.
-- Fallback observability — register a callback fired whenever the requested locale falls back to another.
-- No runtime DSL — drop the `intl-messageformat` parser entirely.
-
 ## Contents
 
+- [Benefits](#benefits)
 - [Getting started](#getting-started)
 - [Detecting from explicit candidates](#detecting-from-explicit-candidates)
 - [Defining messages](#defining-messages)
@@ -31,6 +23,17 @@
 - [Interpolating components](#interpolating-components)
 - [Strict mode](#strict-mode)
 - [Fallback observability](#fallback-observability)
+
+## Benefits
+
+- Plain TS / JS — interpolation is template literals; `Intl.NumberFormat`, `Intl.DateTimeFormat`, and `Intl.PluralRules` are injected per formatter.
+- Type-safe arguments — `template<{ name: string }>({...})` enforces the argument shape across every locale.
+- Message-first nesting — each message lives next to its translations.
+- At-least-one locale — the type system rejects empty entries; the runtime walks the configured `locales` list in order to find a defined variant.
+- Strict mode opt-in — pass `Mode.Strict` and the type system enforces every locale on every message.
+- Rich messages — formatters return `ReactNode`, so JSX (links, styled spans, icons) embeds inline without a wrapper component.
+- Fallback observability — register a callback fired whenever the requested locale falls back to another.
+- No runtime DSL — drop the `intl-messageformat` parser entirely.
 
 ## Getting started
 
