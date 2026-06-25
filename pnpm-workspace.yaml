@@ -1,5 +1,7 @@
 packages: []
 allowBuilds:
-  esbuild: set this to true or false
+  esbuild: true
+  unrs-resolver: true
+minimumReleaseAge: 0
 onlyBuiltDependencies:
   - esbuild
