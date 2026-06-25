@@ -86,7 +86,7 @@ export class I18n<const L extends string, M extends Mode = Mode.Loose> {
     const [initial] = config.locales;
     if (initial === undefined) {
       throw new Error(
-        "Reacti8n: I18n requires at least one locale in config.locales.",
+        "Tradurre: I18n requires at least one locale in config.locales.",
       );
     }
     this.locales = config.locales;

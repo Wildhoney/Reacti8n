@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-const STORAGE_KEY = "reacti8n.example.locale";
+const STORAGE_KEY = "tradurre.example.locale";
 
-test.describe("Reacti8n example", () => {
+test.describe("Tradurre example", () => {
   test("renders the English menu by default", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 3 })).toHaveText(
-      "Reacti8n · Coffee Menu",
+      "Tradurre · Coffee Menu",
     );
     await expect(page.getByTestId("coffee-espresso-price")).toHaveText("£2.50");
     await expect(page.getByTestId("coffee-mocha-price")).toHaveText("£4.50");
@@ -19,7 +19,7 @@ test.describe("Reacti8n example", () => {
     await page.getByTestId("language-select").click();
     await page.getByText("日本語").click();
     await expect(page.getByRole("heading", { level: 3 })).toHaveText(
-      "Reacti8n · コーヒーメニュー",
+      "Tradurre · コーヒーメニュー",
     );
     await expect(page.getByTestId("coffee-espresso-price")).toHaveText("￥3");
   });
@@ -38,12 +38,12 @@ test.describe("Reacti8n example", () => {
       await page.getByTestId("language-select").click();
       await page.getByText("Français").click();
       await expect(page.getByRole("heading", { level: 3 })).toHaveText(
-        "Reacti8n · Carte des Cafés",
+        "Tradurre · Carte des Cafés",
       );
 
       await page.reload();
       await expect(page.getByRole("heading", { level: 3 })).toHaveText(
-        "Reacti8n · Carte des Cafés",
+        "Tradurre · Carte des Cafés",
       );
       const stored = await page.evaluate(
         (key) => sessionStorage.getItem(key),
@@ -62,7 +62,7 @@ test.describe("Reacti8n example", () => {
       );
       await page.goto("/");
       await expect(page.getByRole("heading", { level: 3 })).toHaveText(
-        "Reacti8n · Kaffeekarte",
+        "Tradurre · Kaffeekarte",
       );
     });
 
@@ -80,7 +80,7 @@ test.describe("Reacti8n example", () => {
       );
       await page.goto("/");
       await expect(page.getByRole("heading", { level: 3 })).toContainText(
-        "Reacti8n",
+        "Tradurre",
       );
       await page.getByTestId("language-select").click();
       await page.getByText("Italiano").click();
@@ -98,13 +98,13 @@ test.describe("Reacti8n example", () => {
       await page.getByTestId("language-select").click();
       await page.getByText("Español").click();
       await expect(page.getByRole("heading", { level: 3 })).toHaveText(
-        "Reacti8n · Carta de Cafés",
+        "Tradurre · Carta de Cafés",
       );
 
       await page.evaluate((key) => sessionStorage.removeItem(key), STORAGE_KEY);
       await page.reload();
       await expect(page.getByRole("heading", { level: 3 })).toHaveText(
-        "Reacti8n · Coffee Menu",
+        "Tradurre · Coffee Menu",
       );
     });
   });

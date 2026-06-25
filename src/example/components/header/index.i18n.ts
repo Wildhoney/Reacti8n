@@ -2,17 +2,17 @@ import { Locale, i18n } from "../../utils";
 
 export const dictionary = i18n.dictionary({
   appTitle: i18n.template({
-    [Locale.En]: () => "Reacti8n · Coffee Menu",
-    [Locale.Fr]: () => "Reacti8n · Carte des Cafés",
-    [Locale.De]: () => "Reacti8n · Kaffeekarte",
-    [Locale.It]: () => "Reacti8n · Menù del Caffè",
-    [Locale.Es]: () => "Reacti8n · Carta de Cafés",
-    [Locale.Ar]: () => "Reacti8n · قائمة القهوة",
-    [Locale.Ja]: () => "Reacti8n · コーヒーメニュー",
-    [Locale.Ru]: () => "Reacti8n · Меню кофе",
-    [Locale.Uk]: () => "Reacti8n · Меню кави",
-    [Locale.Ka]: () => "Reacti8n · ყავის მენიუ",
-    [Locale.Zh]: () => "Reacti8n · 咖啡菜单",
+    [Locale.En]: () => "Tradurre · Coffee Menu",
+    [Locale.Fr]: () => "Tradurre · Carte des Cafés",
+    [Locale.De]: () => "Tradurre · Kaffeekarte",
+    [Locale.It]: () => "Tradurre · Menù del Caffè",
+    [Locale.Es]: () => "Tradurre · Carta de Cafés",
+    [Locale.Ar]: () => "Tradurre · قائمة القهوة",
+    [Locale.Ja]: () => "Tradurre · コーヒーメニュー",
+    [Locale.Ru]: () => "Tradurre · Меню кофе",
+    [Locale.Uk]: () => "Tradurre · Меню кави",
+    [Locale.Ka]: () => "Tradurre · ყავის მენიუ",
+    [Locale.Zh]: () => "Tradurre · 咖啡菜单",
   }),
   tagline: i18n.template({
     [Locale.En]: () =>

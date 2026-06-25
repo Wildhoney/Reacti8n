@@ -51,7 +51,7 @@ export function makeProvider<L extends string>(initialLocale: L) {
     const handle = useContext(Context);
     if (handle === null) {
       throw new Error(
-        "Reacti8n: useLocale() called outside of an <i18n.Provider>.",
+        "Tradurre: useLocale() called outside of an <i18n.Provider>.",
       );
     }
     return handle;

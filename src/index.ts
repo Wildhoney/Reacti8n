@@ -1,5 +1,5 @@
 /**
- * Reacti8n public API.
+ * Tradurre public API.
  *
  * The only module-level exports are the {@link I18n} constructor and the
  * {@link Mode} enum. Every other capability — `dictionary`, `template`,

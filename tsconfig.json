@@ -22,7 +22,7 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "paths": {
-      "reacti8n": ["./src/index.ts"]
+      "tradurre": ["./src/index.ts"]
     },
     "types": ["vitest/globals", "node"]
   },

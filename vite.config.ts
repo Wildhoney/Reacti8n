@@ -6,7 +6,7 @@ import dts from "vite-plugin-dts";
 
 function serveExample(): Plugin {
   return {
-    name: "reacti8n-serve-example",
+    name: "tradurre-serve-example",
     configureServer(server) {
       server.middlewares.use((req, _res, next) => {
         const url = req.url ?? "/";
@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
   return {
     resolve: {
       alias: {
-        reacti8n: resolve(__dirname, "src/index.ts"),
+        tradurre: resolve(__dirname, "src/index.ts"),
       },
     },
     plugins: isExample
@@ -58,9 +58,9 @@ export default defineConfig(({ mode }) => {
       : {
           lib: {
             entry: resolve(__dirname, "src/index.ts"),
-            name: "Reacti8n",
+            name: "Tradurre",
             fileName: (format) =>
-              format === "es" ? "reacti8n.js" : `reacti8n.${format}`,
+              format === "es" ? "tradurre.js" : `tradurre.${format}`,
             formats: ["es", "cjs"],
           },
           rollupOptions: {

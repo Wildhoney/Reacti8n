@@ -1,21 +1,21 @@
 <p align="center">
-  <img src="./media/logo.png" alt="Reacti8n — Tower of Babel" width="640" />
+  <img src="./media/logo.png" alt="Tradurre — Tower of Babel" width="640" />
 </p>
 
-<h1 align="center">Reacti8n</h1>
+<h1 align="center">Tradurre</h1>
 
 <p align="center">
   <em>Tiny, type-safe, message-first i18n for React. No DSL, no ICU runtime, no codegen — translations are plain TypeScript functions.</em>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Wildhoney/Reacti8n/actions/workflows/checks.yml">
-    <img src="https://github.com/Wildhoney/Reacti8n/actions/workflows/checks.yml/badge.svg" alt="Checks" />
+  <a href="https://github.com/Wildhoney/Tradurre/actions/workflows/checks.yml">
+    <img src="https://github.com/Wildhoney/Tradurre/actions/workflows/checks.yml/badge.svg" alt="Checks" />
   </a>
 </p>
 
 <p align="center">
-  <a href="https://wildhoney.github.io/Reacti8n/"><strong>View demo →</strong></a>
+  <a href="https://wildhoney.github.io/Tradurre/"><strong>View demo →</strong></a>
 </p>
 
 ## Contents
@@ -52,14 +52,14 @@
 Install the package — plus the optional `@formatjs` packages if you need CLDR plural data on older runtimes:
 
 ```sh
-pnpm add reacti8n
+pnpm add tradurre
 pnpm add @formatjs/intl-pluralrules @formatjs/intl-localematcher
 ```
 
 Configure once in your app entry. The class returns a typed instance scoped to your locale list — no module-level globals. The fallback chain is the order of `locales`: lookup walks left-to-right and stops at the first defined variant. The type system requires at least one locale per message, so a message that is undefined in every locale is a compile error.
 
 ```ts
-import { I18n } from "reacti8n";
+import { I18n } from "tradurre";
 
 enum Locale {
   En,
@@ -357,7 +357,7 @@ By default (`Mode.Loose`), the type system requires at least one locale per mess
 In the snippet below, the locale set is `Locale.En | Locale.Fr`. `auRevoir` only defines `fr`, which the compiler rejects in strict mode — the same code is valid under the default `Mode.Loose`.
 
 ```ts
-import { I18n, Mode } from "reacti8n";
+import { I18n, Mode } from "tradurre";
 
 namespace Locale {
   export type Set = Locale.En | Locale.Fr;
@@ -405,7 +405,7 @@ When a test exercises a code path that resolves to a non-requested locale, you u
 ```tsx
 import { render, screen } from "@testing-library/react";
 import { vi } from "vitest";
-import { I18n } from "reacti8n";
+import { I18n } from "tradurre";
 
 it("renders the French copy and reports the fallback", () => {
   const onFallback = vi.fn();
@@ -437,7 +437,7 @@ The callback fires synchronously inside `Dictionary.resolve()`, so the spy is po
 
 ## Fallback observability
 
-A common operational worry with i18n is "missing translations shipped quietly." Reacti8n calls the `onFallback` handler (registered on `new I18n()`) every time a dictionary entry resolves to a non-requested locale, or to `null` when the key is missing entirely.
+A common operational worry with i18n is "missing translations shipped quietly." Tradurre calls the `onFallback` handler (registered on `new I18n()`) every time a dictionary entry resolves to a non-requested locale, or to `null` when the key is missing entirely.
 
 Each event reports three fields. `key` is the message id that fell back. `requested` is the locale the consumer asked for. `resolved` is the locale actually used — or `null` when nothing was found anywhere.
 

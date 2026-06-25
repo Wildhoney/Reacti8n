@@ -16,7 +16,7 @@ describe("<Header />", () => {
   it("renders the localized title, tagline, and language label", () => {
     renderWith(Locale.En);
     expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent(
-      "Reacti8n · Coffee Menu",
+      "Tradurre · Coffee Menu",
     );
     expect(screen.getByText(/type-safe i18n/i)).toBeInTheDocument();
     expect(screen.getByText("Language")).toBeInTheDocument();

@@ -7,7 +7,7 @@ import { Locale, config, i18n, initialLocale } from "./utils";
 
 const root = document.getElementById("root");
 if (root === null) {
-  throw new Error('Reacti8n example: missing <div id="root" />.');
+  throw new Error('Tradurre example: missing <div id="root" />.');
 }
 
 function Root() {

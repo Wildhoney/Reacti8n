@@ -1,6 +1,6 @@
 import { css } from "@emotion/css";
 import { CircleFlag } from "react-circle-flags";
-import { I18n } from "reacti8n";
+import { I18n } from "tradurre";
 
 export enum Locale {
   En = "en",
@@ -67,7 +67,7 @@ const nativeLabel: Record<Locale, string> = {
 };
 
 export const config = {
-  storageKey: "reacti8n.example.locale",
+  storageKey: "tradurre.example.locale",
   locales: Object.values(Locale) as Locale[],
   flagFor,
   nativeLabel,

@@ -1,17 +1,17 @@
 {
-  "name": "reacti8n",
+  "name": "tradurre",
   "version": "0.1.0",
   "description": "Tiny, type-safe, message-first i18n for React with no DSL.",
   "type": "module",
   "packageManager": "pnpm@11.9.0",
-  "main": "./dist/reacti8n.cjs",
-  "module": "./dist/reacti8n.js",
+  "main": "./dist/tradurre.cjs",
+  "module": "./dist/tradurre.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/reacti8n.js",
-      "require": "./dist/reacti8n.cjs"
+      "import": "./dist/tradurre.js",
+      "require": "./dist/tradurre.cjs"
     }
   },
   "files": [
@@ -21,7 +21,7 @@
   ],
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",
-    "build:example": "vite build --mode example --base /Reacti8n/ && mv dist-example/src/example/index.html dist-example/index.html && rm -rf dist-example/src",
+    "build:example": "vite build --mode example --base /Tradurre/ && mv dist-example/src/example/index.html dist-example/index.html && rm -rf dist-example/src",
     "dev": "vite",
     "preview": "vite preview",
     "test": "vitest run",
@@ -45,7 +45,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Wildhoney/Reacti8n.git"
+    "url": "git+https://github.com/Wildhoney/Tradurre.git"
   },
   "peerDependencies": {
     "react": ">=18"
