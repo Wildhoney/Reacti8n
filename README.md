@@ -145,14 +145,14 @@ A dictionary is a flat record of message-id → variants. Each entry is either a
 ```ts
 import { i18n } from "./i18n";
 
-namespace Template {
+namespace Tokens {
   type Greet = { name: string };
 }
 
 export const translations = i18n.dictionary({
   ok: { [Locale.En]: "OK", [Locale.Fr]: "OK", [Locale.De]: "OK" },
 
-  greet: i18n.template<Template.Greet>({
+  greet: i18n.template<Tokens.Greet>({
     [Locale.En]({ tokens }) {
       return `Hello, ${tokens.name}`;
     },
@@ -199,11 +199,11 @@ Every template formatter receives a `helpers` object scoped to the active locale
 `helpers.pluralRules()` returns an `Intl.PluralRules` for the active locale. Branch on the category to pick the right form per language.
 
 ```ts
-namespace Template {
+namespace Tokens {
   type Items = { count: number };
 }
 
-items: i18n.template<Template.Items>({
+items: i18n.template<Tokens.Items>({
   [Locale.En]({ tokens, helpers }) {
     const category = helpers.pluralRules().select(tokens.count);
     return category === "one" ? "1 item" : `${tokens.count} items`;
@@ -226,11 +226,11 @@ items: i18n.template<Template.Items>({
 `helpers.numberFormat(options)` returns an `Intl.NumberFormat`. Pass it standard `Intl.NumberFormatOptions` — currency, percentage, units, anything the spec supports.
 
 ```ts
-namespace Template {
+namespace Tokens {
   type Balance = { amount: number };
 }
 
-balance: i18n.template<Template.Balance>({
+balance: i18n.template<Tokens.Balance>({
   [Locale.En]({ tokens, helpers }) {
     return `Balance: ${helpers
       .numberFormat({ style: "currency", currency: "USD" })
@@ -249,11 +249,11 @@ balance: i18n.template<Template.Balance>({
 `helpers.dateTimeFormat(options)` returns an `Intl.DateTimeFormat`. Use the `dateStyle` / `timeStyle` presets or any granular option.
 
 ```ts
-namespace Template {
+namespace Tokens {
   type SentOn = { when: Date };
 }
 
-sentOn: i18n.template<Template.SentOn>({
+sentOn: i18n.template<Tokens.SentOn>({
   [Locale.En]({ tokens, helpers }) {
     return `Sent on ${helpers
       .dateTimeFormat({ dateStyle: "long" })
@@ -282,12 +282,12 @@ A consumer requesting `en` resolves `auRevoir` to the `fr` variant and the callb
 Template formatters return `ReactNode`, so you can return JSX directly — wrap a count in a styled element, drop a `<Link>` inline, whatever. There is no dedicated `<Trans>` component because there is nothing to wrap: a message _is_ a `(args) => ReactNode` function, so you call it in JSX:
 
 ```tsx
-namespace Template {
+namespace Tokens {
   type Articles = { count: number };
 }
 
 export const translations = i18n.dictionary({
-  articles: i18n.template<Template.Articles>({
+  articles: i18n.template<Tokens.Articles>({
     [Locale.En]({ tokens, helpers }) {
       const category = helpers.pluralRules().select(tokens.count);
       return category === "one" ? (

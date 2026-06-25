@@ -11,8 +11,8 @@ type Props = { id: Id };
 export function Card({ id }: Props) {
   const copy = i18n.useI18n(dictionary);
   const entry = menu[id];
-  const name = copy[`${id}Name`];
-  const description = copy[`${id}Description`];
+  const name = copy[`${id}Name`]({});
+  const description = copy[`${id}Description`]({});
 
   return (
     <AntCard

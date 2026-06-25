@@ -23,10 +23,10 @@ export function Header() {
             />
             <div className={styles.titleColumn}>
               <Typography.Title level={3} className={styles.appTitle}>
-                {copy.appTitle}
+                {copy.appTitle({})}
               </Typography.Title>
               <Typography.Text type="secondary" className={styles.tagline}>
-                {copy.tagline}
+                {copy.tagline({})}
               </Typography.Text>
             </div>
           </div>
@@ -34,7 +34,7 @@ export function Header() {
         <Col xs={24} md={8} className={styles.languageCol}>
           <Space size="middle" align="center" wrap>
             <Typography.Text type="secondary">
-              {copy.languageLabel}
+              {copy.languageLabel({})}
             </Typography.Text>
             <Select
               value={locale}
