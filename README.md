@@ -175,7 +175,11 @@ Every template formatter receives a `helpers` object scoped to the active locale
 `helpers.pluralRules()` returns an `Intl.PluralRules` for the active locale. Branch on the category to pick the right form per language.
 
 ```ts
-items: i18n.template<{ count: number }>({
+namespace Template {
+  type Items = { count: number };
+}
+
+items: i18n.template<Template.Items>({
   en({ tokens, helpers }) {
     const category = helpers.pluralRules().select(tokens.count);
     return category === "one" ? "1 item" : `${tokens.count} items`;
@@ -198,7 +202,11 @@ items: i18n.template<{ count: number }>({
 `helpers.numberFormat(options)` returns an `Intl.NumberFormat`. Pass it standard `Intl.NumberFormatOptions` — currency, percentage, units, anything the spec supports.
 
 ```ts
-balance: i18n.template<{ amount: number }>({
+namespace Template {
+  type Balance = { amount: number };
+}
+
+balance: i18n.template<Template.Balance>({
   en({ tokens, helpers }) {
     return `Balance: ${helpers
       .numberFormat({ style: "currency", currency: "USD" })
@@ -217,7 +225,11 @@ balance: i18n.template<{ amount: number }>({
 `helpers.dateTimeFormat(options)` returns an `Intl.DateTimeFormat`. Use the `dateStyle` / `timeStyle` presets or any granular option.
 
 ```ts
-sentOn: i18n.template<{ when: Date }>({
+namespace Template {
+  type SentOn = { when: Date };
+}
+
+sentOn: i18n.template<Template.SentOn>({
   en({ tokens, helpers }) {
     return `Sent on ${helpers
       .dateTimeFormat({ dateStyle: "long" })
@@ -246,8 +258,12 @@ A consumer requesting `en` resolves `auRevoir` to the `fr` variant and the callb
 Template formatters return `ReactNode`, so you can return JSX directly — wrap a count in a styled element, drop a `<Link>` inline, whatever. There is no dedicated `<Trans>` component because there is nothing to wrap: a message _is_ a `(args) => ReactNode` function, so you call it in JSX:
 
 ```tsx
+namespace Template {
+  type Articles = { count: number };
+}
+
 export const translations = i18n.dictionary({
-  articles: i18n.template<{ count: number }>({
+  articles: i18n.template<Template.Articles>({
     en({ tokens, helpers }) {
       const category = helpers.pluralRules().select(tokens.count);
       return category === "one" ? (
@@ -288,7 +304,11 @@ In the snippet below, the locale set is `"en" | "fr"`. `auRevoir` only defines `
 ```ts
 import { I18n, Mode } from "reacti8n";
 
-export const i18n = new I18n<"en" | "fr", Mode.Strict>({
+namespace Locale {
+  export type Set = "en" | "fr";
+}
+
+export const i18n = new I18n<Locale.Set, Mode.Strict>({
   locales: ["en", "fr"] as const,
 });
 
