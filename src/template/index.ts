@@ -35,6 +35,11 @@ export class Template<L extends string, Args> {
  * defining templates outside the {@link I18n} instance scope (e.g. helper
  * modules).
  *
+ * `Args` defaults to `object`, so token-less templates omit the generic and
+ * are callable as `copy.foo()` (no `{}` placeholder). Supplying `Args` with
+ * at least one required key flips the resolved callable's parameter from
+ * optional to required — see {@link Resolved}.
+ *
  * @typeParam L - Locale union for this i18n instance.
  * @typeParam M - Coverage strictness — defaults to {@link Mode.Loose}.
  * @returns A `template<Args>(variants)` function that builds a typed

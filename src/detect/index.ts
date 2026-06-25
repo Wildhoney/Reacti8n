@@ -28,15 +28,17 @@ export function makeDetect<L extends string>(
    * code. When `requested` is omitted, candidates come from
    * `navigator.languages` (or `navigator.language`).
    *
-   * @param requested - Optional explicit list of BCP-47 candidates. Use this
-   * when the locale shouldn't come from `navigator` — cookies, query strings,
-   * server-rendered headers, user preferences.
+   * @param requested - Optional list of candidates. Accepts anything — entries
+   * that aren't strings (e.g. `null` from `sessionStorage.getItem`) are
+   * skipped, so callers can splat partially-typed sources together without
+   * pre-filtering. Use this when the locale shouldn't come from `navigator` —
+   * cookies, query strings, server-rendered headers, user preferences.
    * @returns The first matching configured locale, or `fallback` if none
    * matches.
    */
-  function detect(requested?: readonly string[]): L {
+  function detect(requested?: readonly unknown[]): L {
     const candidates =
-      requested ?? readNavigatorLanguages() ?? ([] as readonly string[]);
+      requested ?? readNavigatorLanguages() ?? ([] as readonly unknown[]);
     for (const candidate of candidates) {
       if (typeof candidate !== "string") continue;
       const dash = candidate.indexOf("-");

@@ -26,9 +26,17 @@ describe("detect()", () => {
   });
 
   it("ignores non-string entries in the candidate list", () => {
-    expect(
-      detect([42 as unknown as string, undefined as unknown as string, "fr"]),
-    ).toBe("fr");
+    expect(detect([42, undefined, "fr"])).toBe("fr");
+  });
+
+  it("skips null and undefined candidates so callers can splat partial sources", () => {
+    const stored: string | null = null;
+    const navigatorLanguages: readonly string[] = ["fr-CA", "en-US"];
+    expect(detect([stored, ...navigatorLanguages])).toBe("fr");
+  });
+
+  it("returns the fallback when every candidate is null or undefined", () => {
+    expect(detect([null, undefined])).toBe("en");
   });
 
   it("reads navigator.languages when no candidates are supplied", () => {

@@ -10,16 +10,13 @@ type Props = { id: Id };
 
 export function Card({ id }: Props) {
   const copy = i18n.useI18n(dictionary);
-  const entry = menu[id];
-  const name = copy[`${id}Name`]({});
-  const description = copy[`${id}Description`]({});
 
   return (
     <AntCard
       title={
         <Space>
-          <span className={styles.emoji}>{entry.emoji}</span>
-          <span>{name}</span>
+          <span className={styles.emoji}>{menu[id].emoji}</span>
+          <span>{copy[`${id}Name`]()}</span>
         </Space>
       }
       data-testid={`coffee-${id}`}
@@ -29,7 +26,7 @@ export function Card({ id }: Props) {
         className={styles.description}
         data-testid={`coffee-${id}-description`}
       >
-        {description}
+        {copy[`${id}Description`]()}
       </Typography.Paragraph>
 
       <Typography.Text
@@ -37,7 +34,7 @@ export function Card({ id }: Props) {
         className={styles.price}
         data-testid={`coffee-${id}-price`}
       >
-        {copy.price({ amount: entry.price })}
+        {copy.price({ amount: menu[id].price })}
       </Typography.Text>
     </AntCard>
   );

@@ -35,3 +35,14 @@ export const font = {
     normal: "normal",
   },
 } as const;
+
+export const border = {
+  width: {
+    thin: "1px",
+  },
+} as const;
+
+export const size = {
+  cardDescription: { minHeight: "88px" },
+  selector: { width: "220px" },
+} as const;

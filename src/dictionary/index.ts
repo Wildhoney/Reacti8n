@@ -80,7 +80,7 @@ export class Dictionary<L extends string, D extends Input<L, Mode>> {
         locale,
       );
       if (typeof formatter === "function") {
-        const callable = (tokens: unknown) =>
+        const callable = (tokens: unknown = {}) =>
           (formatter as Formatter<unknown>)({ tokens, helpers });
         // Invariant: when formatter is a function, resolvedAt is the locale
         // whose variant supplied it — it can only be null when the value

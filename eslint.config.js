@@ -79,7 +79,7 @@ export default defineConfig([
   },
   {
     files: ["src/**/*.{ts,tsx}"],
-    ignores: ["**/*.test.{ts,tsx}", "src/tests/**"],
+    ignores: ["**/*.test.{ts,tsx}", "src/tests/**", "src/example/**"],
     rules: { "no-console": "error" },
   },
 ]);

@@ -348,7 +348,23 @@ type ResolvedTemplateMeta = {
 
 `direction` is a flat shortcut for `locale.textInfo.direction` — the common case is "swap the layout for RTL," which is one read.
 
-Plain string variants (`copy.ok`) remain raw strings and don't carry this metadata — a `string` literal can't sprout properties without boxing. For those, `new Intl.Locale(i18n.useLocale().locale).textInfo.direction` gives you the active locale's direction directly. If you need _resolved-locale_ direction on a non-templated message, wrap it in `i18n.template({ ... })` so it becomes a callable that carries `.direction` and `.locale` — the `Args` generic defaults to `object`, so no token type is needed.
+Plain string variants (`copy.ok`) remain raw strings and don't carry this metadata — a `string` literal can't sprout properties without boxing. For those, `new Intl.Locale(i18n.useLocale().locale).textInfo.direction` gives you the active locale's direction directly. If you need _resolved-locale_ direction on a non-templated message, wrap it in `i18n.template({ ... })` so it becomes a callable that carries `.direction` and `.locale` — the `Args` generic defaults to `object`, so you can omit both the type parameter and the call-site arguments:
+
+```tsx
+export const translations = i18n.dictionary({
+  appTitle: i18n.template({
+    [Locale.En]: () => "Coffee Menu",
+    [Locale.Ar]: () => "قائمة القهوة",
+  }),
+});
+
+function Heading() {
+  const copy = i18n.useI18n(translations);
+  return <h1 dir={copy.appTitle.direction}>{copy.appTitle()}</h1>;
+}
+```
+
+Token-less templates are called as `copy.foo()` — no `{}` placeholder needed. Add tokens (`i18n.template<{ name: string }>({...})`) and the call site is required to pass them; the type system flips the parameter from optional to required automatically.
 
 ## Strict mode
 

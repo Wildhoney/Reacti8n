@@ -1,20 +1,7 @@
-import { css } from "@emotion/css";
-import { CircleFlag } from "react-circle-flags";
 import { I18n } from "tradurre";
 
-export enum Locale {
-  En = "en",
-  Fr = "fr",
-  De = "de",
-  It = "it",
-  Es = "es",
-  Ar = "ar",
-  Ja = "ja",
-  Ru = "ru",
-  Uk = "uk",
-  Ka = "ka",
-  Zh = "zh",
-}
+import { Option } from "./components/option";
+import { Locale } from "./types";
 
 export const i18n = new I18n({
   locales: [
@@ -30,15 +17,14 @@ export const i18n = new I18n({
     Locale.Ka,
     Locale.Zh,
   ] as const,
+  onFallback({ key, requested, resolved }) {
+    console.error(
+      `[tradurre] "${key}" missing for ${requested}; using ${resolved ?? "no locale"}.`,
+    );
+  },
 });
 
-const flagOption = css`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const flagFor: Record<Locale, string> = {
+const flags: Record<Locale, string> = {
   [Locale.En]: "gb",
   [Locale.Fr]: "fr",
   [Locale.De]: "de",
@@ -52,7 +38,7 @@ const flagFor: Record<Locale, string> = {
   [Locale.Zh]: "cn",
 };
 
-const nativeLabel: Record<Locale, string> = {
+const labels: Record<Locale, string> = {
   [Locale.En]: "English",
   [Locale.Fr]: "Français",
   [Locale.De]: "Deutsch",
@@ -69,21 +55,15 @@ const nativeLabel: Record<Locale, string> = {
 export const config = {
   storageKey: "tradurre.example.locale",
   locales: Object.values(Locale) as Locale[],
-  flagFor,
-  nativeLabel,
-  languageOptions: (Object.keys(nativeLabel) as Locale[]).map((code) => ({
+  flags,
+  labels,
+  languages: (Object.keys(labels) as Locale[]).map((code) => ({
     value: code,
-    label: (
-      <div className={flagOption}>
-        <CircleFlag countryCode={flagFor[code]} width={18} height={18} />
-        <span>{nativeLabel[code]}</span>
-      </div>
-    ),
+    label: <Option flag={flags[code]} label={labels[code]} />,
   })),
 };
 
-export function initialLocale(): Locale {
-  const stored = sessionStorage.getItem(config.storageKey);
-  if (stored === null) return i18n.detect();
-  return i18n.detect([stored, ...(navigator.languages ?? [])]);
+export function getLocale(): Locale {
+  const preference = sessionStorage.getItem(config.storageKey);
+  return i18n.detect([preference, ...navigator.languages]);
 }

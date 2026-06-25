@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Locale, i18n } from "../../utils";
+import { Locale } from "../../types";
+import { i18n } from "../../utils";
 import { Header } from "./index";
 
 function renderWith(locale: Locale) {

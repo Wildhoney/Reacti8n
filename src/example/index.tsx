@@ -2,8 +2,9 @@ import "@ant-design/v5-patch-for-react-19";
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-import { App } from "./app";
-import { Locale, config, i18n, initialLocale } from "./utils";
+import { App } from "./components/app";
+import { Locale } from "./types";
+import { config, getLocale, i18n } from "./utils";
 
 const root = document.getElementById("root");
 if (root === null) {
@@ -11,13 +12,14 @@ if (root === null) {
 }
 
 function Root() {
-  const [locale, setLocale] = useState<Locale>(initialLocale);
+  const [locale, setLocale] = useState<Locale>(getLocale);
+
   return (
     <i18n.Provider
       locale={locale}
-      onLocaleChange={(next) => {
-        sessionStorage.setItem(config.storageKey, next);
-        setLocale(next);
+      onLocaleChange={(locale) => {
+        sessionStorage.setItem(config.storageKey, locale);
+        setLocale(locale);
       }}
     >
       <App />

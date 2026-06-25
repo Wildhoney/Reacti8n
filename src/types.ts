@@ -169,12 +169,19 @@ export type ResolvedTemplateMeta = {
  * a {@link ResolvedTemplateMeta} sidecar on the function itself), the raw
  * value for plain variants.
  *
+ * The callable's `args` parameter is optional when `Args` is satisfied by
+ * `{}` — i.e. token-less templates (default `Args = object`) and templates
+ * whose tokens are all optional. As soon as a template declares a required
+ * token, the parameter becomes required at the call site.
+ *
  * @typeParam L - Locale union for this i18n instance.
  * @typeParam E - Entry type to resolve.
  */
 export type Resolved<L extends string, E> =
   E extends Template<L, infer Args>
-    ? ((args: Args) => ReactNode) & ResolvedTemplateMeta
+    ? Record<string, never> extends Args
+      ? ((args?: Args) => ReactNode) & ResolvedTemplateMeta
+      : ((args: Args) => ReactNode) & ResolvedTemplateMeta
     : E extends Variants<L, infer V>
       ? V
       : E;

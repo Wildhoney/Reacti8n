@@ -1,8 +1,8 @@
 import { css } from "@emotion/css";
 
-import { colour, spacing } from "./theme";
+import { colour, spacing } from "../../theme";
 
-export const shell = css`
+export const container = css`
   min-height: 100vh;
   background: ${colour.background.page};
 `;

@@ -1,6 +1,6 @@
 import { css } from "@emotion/css";
 
-import { font } from "../../theme";
+import { font, size } from "../../theme";
 
 export const emoji = css`
   font-size: ${font.size.xl};
@@ -8,7 +8,7 @@ export const emoji = css`
 
 export const description = css`
   && {
-    min-height: 88px;
+    min-height: ${size.cardDescription.minHeight};
   }
 `;
 
