@@ -1,6 +1,14 @@
-/**
- * Vitest setup module — registers `@testing-library/jest-dom` custom matchers
- * (`toBeInTheDocument`, `toHaveTextContent`, …) on Vitest's `expect`. Wired
- * in via `vite.config.ts`'s `test.setupFiles`.
- */
 import "@testing-library/jest-dom/vitest";
+
+if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
+  window.matchMedia = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  });
+}

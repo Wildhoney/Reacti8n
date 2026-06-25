@@ -1,4 +1,4 @@
-import { Locale, i18n } from "../../i18n";
+import { Locale, i18n } from "../../utils";
 
 export const dictionary = i18n.dictionary({
   appTitle: {

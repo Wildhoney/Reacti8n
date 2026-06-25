@@ -1,14 +1,14 @@
 import { Card as AntCard, Space, Typography } from "antd";
 
-import { i18n } from "../../i18n";
+import { i18n } from "../../utils";
 import { dictionary } from "./index.i18n";
 import * as styles from "./styles";
 import type { Id } from "./types";
 import { menu } from "./utils";
 
-const { Paragraph, Text } = Typography;
+type Props = { id: Id };
 
-export function Card({ id }: { id: Id }) {
+export function Card({ id }: Props) {
   const copy = i18n.useI18n(dictionary);
   const entry = menu[id];
   const name = copy[`${id}Name`];
@@ -24,20 +24,21 @@ export function Card({ id }: { id: Id }) {
       }
       data-testid={`coffee-${id}`}
     >
-      <Paragraph
+      <Typography.Paragraph
         type="secondary"
         className={styles.description}
         data-testid={`coffee-${id}-description`}
       >
         {description}
-      </Paragraph>
-      <Text
+      </Typography.Paragraph>
+      
+      <Typography.Text
         strong
         className={styles.price}
         data-testid={`coffee-${id}-price`}
       >
         {copy.price({ amount: entry.price })}
-      </Text>
+      </Typography.Text>
     </AntCard>
   );
 }

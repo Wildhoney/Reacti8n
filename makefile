@@ -28,6 +28,9 @@ lint:
 test:
 	make unit
 
+browser:
+	npx playwright test
+
 checks:
 	make fmt
 	make lint
@@ -35,6 +38,7 @@ checks:
 	make circular
 	make build
 	make unit-coverage
+	make browser
 
 deploy:
 	pnpm install --frozen-lockfile

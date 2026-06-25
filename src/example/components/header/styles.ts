@@ -44,9 +44,3 @@ export const languageCol = css`
   display: flex;
   justify-content: flex-end;
 `;
-
-export const flagOption = css`
-  display: flex;
-  align-items: center;
-  gap: ${spacing.xs};
-`;
