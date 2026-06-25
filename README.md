@@ -8,6 +8,12 @@
   <em>Tiny, type-safe, message-first i18n for React. No DSL, no ICU runtime, no codegen — translations are plain TypeScript functions.</em>
 </p>
 
+<p align="center">
+  <a href="https://github.com/Wildhoney/Reacti8n/actions/workflows/checks.yml">
+    <img src="https://github.com/Wildhoney/Reacti8n/actions/workflows/checks.yml/badge.svg" alt="Checks" />
+  </a>
+</p>
+
 ## Contents
 
 - [Benefits](#benefits)
