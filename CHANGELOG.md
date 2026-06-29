@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.3.0](https://github.com/Wildhoney/Tradurre/compare/v0.2.0...v0.3.0) (2026-06-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **polyfills:** per-formatter user-supplied loaders, drop built-in dynamic-import to fix Metro/RN bundling
+
+### Features
+
+* **polyfills:** per-formatter user-supplied loaders, drop built-in dynamic-import to fix Metro/RN bundling ([4ce590b](https://github.com/Wildhoney/Tradurre/commit/4ce590b1d24ab00e53307c5251bf62c570087bc4))
+
 ## 0.2.0 (2026-06-25)
 
 ### ⚠ BREAKING CHANGES
