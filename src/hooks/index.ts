@@ -1,5 +1,5 @@
 import type { Dictionary } from "../dictionary/index.ts";
-import type { Input, Merged } from "../types.ts";
+import type { Input, ResolvedDictionary } from "../types.ts";
 
 /**
  * Factory that binds a hook closure to a specific provider's `useLocale`
@@ -17,15 +17,15 @@ export function makeHooks<L extends string>(useLocale: () => { locale: L }) {
    * Resolves a {@link Dictionary} against the active locale.
    *
    * Reads the locale from the surrounding `<i18n.Provider>` and returns the
-   * memoised resolved view typed by {@link Merged}.
+   * memoised `{ copy, locale }` bundle.
    *
    * @typeParam D - Dictionary input type.
    * @param dictionary - Dictionary built via `i18n.dictionary(...)`.
-   * @returns A fully resolved object whose keys are the message ids.
+   * @returns A `{ copy, locale }` bundle keyed by the active locale.
    */
   function useI18n<D extends Input<L>>(
     dictionary: Dictionary<L, D>,
-  ): Merged<L, D> {
+  ): ResolvedDictionary<L, D> {
     return dictionary.resolve(useLocale().locale);
   }
 

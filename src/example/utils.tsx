@@ -17,11 +17,6 @@ export const i18n = new I18n({
     Locale.Ka,
     Locale.Zh,
   ] as const,
-  onFallback({ key, requested, resolved }) {
-    console.error(
-      `[tradurre] "${key}" missing for ${requested}; using ${resolved ?? "no locale"}.`,
-    );
-  },
 });
 
 const flags: Record<Locale, string> = {

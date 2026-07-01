@@ -1,11 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { makeDictionary } from "./index.ts";
 import { makeTemplate } from "../template/index.ts";
-import type { FallbackEvent } from "../types.ts";
 
-const locales = ["en", "fr"] as const;
-const dictionary = makeDictionary<"en" | "fr">(locales);
+const dictionary = makeDictionary<"en" | "fr">();
 const template = makeTemplate<"en" | "fr">();
 
 describe("Dictionary.resolve()", () => {
@@ -13,15 +11,8 @@ describe("Dictionary.resolve()", () => {
     const dict = dictionary({
       ok: template({ en: () => "OK", fr: () => "Accepter" }),
     });
-    expect(dict.resolve("en").ok()).toBe("OK");
-    expect(dict.resolve("fr").ok()).toBe("Accepter");
-  });
-
-  it("falls back to any defined locale when the active one is missing", () => {
-    const dict = dictionary({
-      auRevoir: template({ fr: () => "Au revoir" }),
-    });
-    expect(dict.resolve("en").auRevoir()).toBe("Au revoir");
+    expect(dict.resolve("en").copy.ok()).toBe("OK");
+    expect(dict.resolve("fr").copy.ok()).toBe("Accepter");
   });
 
   it("invokes Template variants with the supplied args", () => {
@@ -35,8 +26,10 @@ describe("Dictionary.resolve()", () => {
         },
       }),
     });
-    expect(dict.resolve("en").greet({ name: "Imogen" })).toBe("Hello, Imogen");
-    expect(dict.resolve("fr").greet({ name: "Phoebe" })).toBe(
+    expect(dict.resolve("en").copy.greet({ name: "Imogen" })).toBe(
+      "Hello, Imogen",
+    );
+    expect(dict.resolve("fr").copy.greet({ name: "Phoebe" })).toBe(
       "Bonjour, Phoebe",
     );
   });
@@ -56,8 +49,10 @@ describe("Dictionary.resolve()", () => {
         },
       }),
     });
-    expect(dict.resolve("en").balance({ amount: 1234.5 })).toBe("$1,234.50");
-    expect(dict.resolve("fr").balance({ amount: 1234.5 })).toBe(
+    expect(dict.resolve("en").copy.balance({ amount: 1234.5 })).toBe(
+      "$1,234.50",
+    );
+    expect(dict.resolve("fr").copy.balance({ amount: 1234.5 })).toBe(
       new Intl.NumberFormat("fr", {
         style: "currency",
         currency: "EUR",
@@ -73,10 +68,15 @@ describe("Dictionary.resolve()", () => {
             .dateTimeFormat({ dateStyle: "short" })
             .format(tokens.when);
         },
+        fr({ tokens, helpers }) {
+          return helpers
+            .dateTimeFormat({ dateStyle: "short" })
+            .format(tokens.when);
+        },
       }),
     });
     const when = new Date("2026-06-24T00:00:00Z");
-    expect(dict.resolve("en").sentOn({ when })).toBe(
+    expect(dict.resolve("en").copy.sentOn({ when })).toBe(
       new Intl.DateTimeFormat("en", { dateStyle: "short" }).format(when),
     );
   });
@@ -88,26 +88,19 @@ describe("Dictionary.resolve()", () => {
           const category = helpers.pluralRules().select(tokens.count);
           return category === "one" ? "1 item" : `${tokens.count} items`;
         },
-      }),
-    });
-    expect(dict.resolve("en").items({ count: 1 })).toBe("1 item");
-    expect(dict.resolve("en").items({ count: 5 })).toBe("5 items");
-  });
-
-  it("falls back through locales for a Template missing the active variant", () => {
-    const dict = dictionary({
-      goodbye: template<{ name: string }>({
-        en({ tokens }) {
-          return `Goodbye, ${tokens.name}`;
+        fr({ tokens, helpers }) {
+          const category = helpers.pluralRules().select(tokens.count);
+          return category === "one"
+            ? `${tokens.count} article`
+            : `${tokens.count} articles`;
         },
       }),
     });
-    expect(dict.resolve("fr").goodbye({ name: "Imogen" })).toBe(
-      "Goodbye, Imogen",
-    );
+    expect(dict.resolve("en").copy.items({ count: 1 })).toBe("1 item");
+    expect(dict.resolve("en").copy.items({ count: 5 })).toBe("5 items");
   });
 
-  it("memoises the resolved object per locale", () => {
+  it("memoises the resolved bundle per locale", () => {
     const dict = dictionary({
       ok: template({ en: () => "OK", fr: () => "Accepter" }),
     });
@@ -115,62 +108,10 @@ describe("Dictionary.resolve()", () => {
     expect(dict.resolve("en")).not.toBe(dict.resolve("fr"));
   });
 
-  it("returns null from a Template when no variant is defined anywhere", () => {
-    // @ts-expect-error - intentionally empty to exercise the resolve-null path
-    const empty = template<{ name: string }>({});
-    const dict = dictionary({ broken: empty });
-    expect(dict.resolve("en").broken).toBeNull();
-  });
-
-  it("invokes onFallback when a Template misses the active locale", () => {
-    const events: FallbackEvent<"en" | "fr">[] = [];
-    const localDictionary = makeDictionary<"en" | "fr">(locales, (event) =>
-      events.push(event),
-    );
-    const dict = localDictionary({
-      goodbye: template<{ name: string }>({
-        en({ tokens }) {
-          return `Goodbye, ${tokens.name}`;
-        },
-      }),
-    });
-    (dict.resolve("fr").goodbye as (args: { name: string }) => string)({
-      name: "Imogen",
-    });
-    expect(events).toEqual([
-      { key: "goodbye", requested: "fr", resolved: "en" },
-    ]);
-  });
-
-  it("invokes onFallback with resolved=null when no locale defines the key", () => {
-    const events: FallbackEvent<"en" | "fr">[] = [];
-    const localDictionary = makeDictionary<"en" | "fr">(locales, (event) =>
-      events.push(event),
-    );
-    // @ts-expect-error - intentionally empty to exercise the resolve-null path
-    const empty = template<{ name: string }>({});
-    const dict = localDictionary({ broken: empty });
-    expect(dict.resolve("en").broken).toBeNull();
-    expect(events).toEqual([
-      { key: "broken", requested: "en", resolved: null },
-    ]);
-  });
-
-  it("does not invoke onFallback when the active locale's variant resolves", () => {
-    const callback = vi.fn();
-    const localDictionary = makeDictionary<"en" | "fr">(locales, callback);
-    const dict = localDictionary({
-      ok: template({ en: () => "OK", fr: () => "Accepter" }),
-    });
-    dict.resolve("fr");
-    expect(callback).not.toHaveBeenCalled();
-  });
-
-  it("attaches direction + locale metadata to resolved Template callables", () => {
-    const arLocales = ["en", "ar"] as const;
-    const arDict = makeDictionary<"en" | "ar">(arLocales);
+  it("exposes the active locale as an Intl.Locale instance and its direction", () => {
+    const arDictionary = makeDictionary<"en" | "ar">();
     const arTemplate = makeTemplate<"en" | "ar">();
-    const dict = arDict({
+    const dict = arDictionary({
       greet: arTemplate<{ name: string }>({
         en({ tokens }) {
           return `Hello, ${tokens.name}`;
@@ -181,29 +122,14 @@ describe("Dictionary.resolve()", () => {
       }),
     });
 
-    const ltr = dict.resolve("en").greet;
-    expect(ltr.direction).toBe("ltr");
-    expect(ltr.locale.language).toBe("en");
+    const en = dict.resolve("en");
+    expect(en.locale).toBeInstanceOf(Intl.Locale);
+    expect(en.locale.language).toBe("en");
+    expect(en.direction).toBe("ltr");
 
-    const rtl = dict.resolve("ar").greet;
-    expect(rtl.direction).toBe("rtl");
-    expect(rtl.locale.language).toBe("ar");
-  });
-
-  it("reports the resolved (not requested) locale on a Template fallback", () => {
-    const arLocales = ["ar", "fr"] as const;
-    const dict = makeDictionary<"ar" | "fr">(arLocales)({
-      farewell: makeTemplate<"ar" | "fr">()<{ name: string }>({
-        fr({ tokens }) {
-          return `Au revoir, ${tokens.name}`;
-        },
-      }),
-    });
-
-    const resolved = dict.resolve("ar").farewell;
-    expect(resolved.direction).toBe("ltr");
-    expect(resolved.locale.language).toBe("fr");
-    expect(resolved({ name: "Imogen" })).toBe("Au revoir, Imogen");
+    const ar = dict.resolve("ar");
+    expect(ar.locale.language).toBe("ar");
+    expect(ar.direction).toBe("rtl");
   });
 
   it("falls back to a known-RTL language list when Intl.Locale.textInfo is unavailable", () => {
@@ -217,7 +143,7 @@ describe("Dictionary.resolve()", () => {
     });
 
     try {
-      const dict = makeDictionary<"en" | "ar">(["en", "ar"] as const)({
+      const dict = makeDictionary<"en" | "ar">()({
         greet: makeTemplate<"en" | "ar">()<{ name: string }>({
           en({ tokens }) {
             return `Hello, ${tokens.name}`;
@@ -227,8 +153,8 @@ describe("Dictionary.resolve()", () => {
           },
         }),
       });
-      expect(dict.resolve("ar").greet.direction).toBe("rtl");
-      expect(dict.resolve("en").greet.direction).toBe("ltr");
+      expect(dict.resolve("ar").direction).toBe("rtl");
+      expect(dict.resolve("en").direction).toBe("ltr");
     } finally {
       if (original !== undefined) {
         Object.defineProperty(Intl.Locale.prototype, "textInfo", original);

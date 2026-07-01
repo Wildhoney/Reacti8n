@@ -5,8 +5,7 @@ import { makeHooks } from "./index.ts";
 import { makeDictionary } from "../dictionary/index.ts";
 import { makeTemplate } from "../template/index.ts";
 
-const locales = ["en", "fr"] as const;
-const dictionary = makeDictionary<"en" | "fr">(locales);
+const dictionary = makeDictionary<"en" | "fr">();
 const template = makeTemplate<"en" | "fr">();
 
 function fixed(locale: "en" | "fr") {
@@ -28,12 +27,16 @@ describe("useI18n()", () => {
   it("resolves the dictionary for the active locale", () => {
     const { useI18n } = makeHooks<"en" | "fr">(fixed("fr"));
     const { result } = renderHook(() => useI18n(dict));
-    expect(result.current.greet({ name: "Phoebe" })).toBe("Bonjour, Phoebe");
+    expect(result.current.copy.greet({ name: "Phoebe" })).toBe(
+      "Bonjour, Phoebe",
+    );
+    expect(result.current.locale.language).toBe("fr");
   });
 
   it("re-resolves when the active locale switches", () => {
     const { useI18n } = makeHooks<"en" | "fr">(fixed("en"));
     const { result } = renderHook(() => useI18n(dict));
-    expect(result.current.greet({ name: "Imogen" })).toBe("Hello, Imogen");
+    expect(result.current.copy.greet({ name: "Imogen" })).toBe("Hello, Imogen");
+    expect(result.current.locale.language).toBe("en");
   });
 });

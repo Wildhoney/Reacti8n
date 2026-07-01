@@ -33,28 +33,6 @@ declare global {
 }
 
 /**
- * Coverage strictness for dictionary entries.
- *
- * In {@link Mode.Loose} (the default) each message must define at least one
- * locale variant; the runtime walks the configured locale list at lookup time
- * to find a defined one. In {@link Mode.Strict} every dictionary entry must
- * define every configured locale — partial coverage becomes a compile-time
- * error.
- */
-export enum Mode {
-  /**
-   * At least one locale variant required per message; the runtime falls back
-   * if the active locale is missing.
-   */
-  Loose = "loose",
-  /**
-   * Every locale variant required for every message; missing locales are a
-   * compile-time error.
-   */
-  Strict = "strict",
-}
-
-/**
  * Locale-bound `Intl` factories handed to every template formatter.
  *
  * Each method returns a fresh `Intl` instance configured for the active
@@ -88,39 +66,18 @@ export type FormatterPayload<Args> = { tokens: Args; helpers: Helpers };
 export type Formatter<Args> = (payload: FormatterPayload<Args>) => ReactNode;
 
 /**
- * Variant of {@link Partial} that requires at least one property to be
- * defined.
- *
- * Used to enforce the "every message defines at least one locale" rule in
- * {@link Mode.Loose}: the type system rejects an empty object literal but
- * permits any non-empty subset of the locale keys.
- *
- * @typeParam T - Source object type whose keys form the eligible set.
- */
-export type AtLeastOne<T> = {
-  [K in keyof T]-?: Required<Pick<T, K>> & Partial<Omit<T, K>>;
-}[keyof T];
-
-/**
- * Map from locale key to variant value, with coverage strictness controlled
- * by {@link Mode}.
+ * Map from locale key to variant value — every configured locale must define
+ * a variant.
  *
  * @typeParam L - Locale union for this i18n instance.
  * @typeParam V - Value type of each variant (a string, a {@link Formatter},
  * etc.).
- * @typeParam M - Coverage strictness — defaults to {@link Mode.Loose}.
  */
-export type Variants<
-  L extends string,
-  V,
-  M extends Mode = Mode.Loose,
-> = M extends Mode.Strict ? Record<L, V> : AtLeastOne<Record<L, V>>;
+export type Variants<L extends string, V> = Record<L, V>;
 
 /**
  * A single dictionary entry: a {@link Template} wrapper. Every message — even
- * a token-less constant string — must be wrapped in `i18n.template({ ... })`
- * so the resolved value is always a callable carrying the
- * {@link ResolvedTemplateMeta} sidecar (`.direction`, `.locale`).
+ * a token-less constant string — must be wrapped in `i18n.template({ ... })`.
  *
  * @typeParam L - Locale union for this i18n instance.
  */
@@ -135,33 +92,8 @@ export type Entry<L extends string> = Template<L, unknown>;
 export type Input<L extends string> = Record<string, Entry<L>>;
 
 /**
- * Metadata attached to a resolved {@link Template} callable, describing the
- * locale that actually backed the resolution.
- *
- * Useful when the requested locale fell back: a consumer asking for Arabic
- * but served the French variant should render an LTR `<h1 dir="...">`, not
- * RTL — and `direction` reflects that resolved locale, not the active one.
- *
- * `locale` is a full {@link Intl.Locale} instance, so every locale-specific
- * field (text direction, week info, numbering system, calendar, hour cycle,
- * language, region, …) is reachable via the standard API.
- */
-export type ResolvedTemplateMeta = {
-  /** Locale that actually backed the resolution. Falls back to the active
-   * locale only when at least one variant defined the message. */
-  readonly locale: Intl.Locale;
-  /**
-   * Shortcut for `locale.textInfo.direction`. `"rtl"` for Arabic, Hebrew,
-   * Persian, Urdu, etc.; `"ltr"` for everything else.
-   */
-  readonly direction: "ltr" | "rtl";
-};
-
-/**
- * Resolves a single dictionary entry into the value consumers see on the
- * `useI18n(...)` result: a callable for the {@link Template} entry, carrying
- * a {@link ResolvedTemplateMeta} sidecar (`.direction`, `.locale`) on the
- * function itself.
+ * Resolves a single dictionary entry into the callable consumers see under
+ * `t.copy` from `useI18n(...)`.
  *
  * The callable's `args` parameter is optional when `Args` is satisfied by
  * `{}` — i.e. token-less templates (default `Args = object`) and templates
@@ -174,13 +106,14 @@ export type ResolvedTemplateMeta = {
 export type Resolved<L extends string, E> =
   E extends Template<L, infer Args>
     ? Record<string, never> extends Args
-      ? ((args?: Args) => ReactNode) & ResolvedTemplateMeta
-      : ((args: Args) => ReactNode) & ResolvedTemplateMeta
+      ? (args?: Args) => ReactNode
+      : (args: Args) => ReactNode
     : never;
 
 /**
  * Resolves every entry of a dictionary input into its consumer-facing shape
- * — this is what `i18n.useI18n(dictionary)` returns.
+ * — this is what lives on the `.copy` field of the `useI18n(...)` return
+ * value.
  *
  * @typeParam L - Locale union for this i18n instance.
  * @typeParam D - Dictionary input type.
@@ -221,34 +154,6 @@ export type ProviderProps<L extends string> = {
 };
 
 /**
- * Notification fired whenever a dictionary entry resolves to a non-requested
- * locale, or when the key is missing from every configured locale.
- *
- * @typeParam L - Locale union for this i18n instance.
- */
-export type FallbackEvent<L extends string> = {
-  /** Message id that fell back. */
-  key: string;
-  /** Locale the consumer asked for. */
-  requested: L;
-  /**
-   * Locale actually used to resolve the message, or `null` when no locale
-   * defined the key.
-   */
-  resolved: L | null;
-};
-
-/**
- * Callback registered on {@link I18nConfig.onFallback}. Invoked synchronously
- * inside `Dictionary.resolve()` — keep it cheap, typically a logger call.
- *
- * @typeParam L - Locale union for this i18n instance.
- */
-export type FallbackHandler<L extends string> = (
-  event: FallbackEvent<L>,
-) => void;
-
-/**
  * Hooks called by the runtime to install one of the `Intl` formatter
  * polyfills from `@formatjs/*` when the host environment is missing native
  * support. The library does not embed dynamic-import specifiers itself —
@@ -257,9 +162,7 @@ export type FallbackHandler<L extends string> = (
  *
  * @typeParam L - Locale union for the parent {@link I18n} instance.
  * Narrowing `data(locale: L)` instead of `string` makes the consumer's
- * `switch (locale)` exhaustive over every configured locale — important
- * because Tradurre loads data for every locale in the fallback chain, not
- * just the active one.
+ * `switch (locale)` exhaustive over every configured locale.
  */
 export type PolyfillLoader<L extends string> = {
   /**
@@ -298,10 +201,8 @@ export type Polyfills<L extends string> = {
  * literal.
  */
 export type I18nConfig<L extends string> = {
-  /** Ordered list of supported locales — defines the fallback chain. */
+  /** Ordered list of supported locales — the first entry is the initial locale. */
   locales: readonly L[];
-  /** Optional callback fired when an entry falls back to another locale. */
-  onFallback?: FallbackHandler<L>;
   /**
    * Optional per-formatter polyfills. Each slot — `pluralRules`,
    * `numberFormat`, `dateTimeFormat` — accepts its own
@@ -315,15 +216,26 @@ export type I18nConfig<L extends string> = {
 };
 
 /**
- * Output of resolving a dictionary against an active locale — the typed
- * object returned by `i18n.useI18n(...)`. Structurally identical to
- * {@link Merged}; exported under its own name as part of the public type
- * surface for consumers who want to annotate intermediate variables.
+ * Object returned by `i18n.useI18n(...)`. Pairs the resolved dictionary
+ * (`copy`) with the active {@link Intl.Locale} instance. Every locale-specific
+ * bit consumers might want — direction, region, script, week info, numbering
+ * system, calendar, hour cycle — is reachable via the standard `Intl.Locale`
+ * API on `locale`, so no per-message metadata is needed.
  *
  * @typeParam L - Locale union for this i18n instance.
  * @typeParam D - Dictionary input type.
  */
-export type ResolvedDictionary<L extends string, D extends Input<L>> = Merged<
-  L,
-  D
->;
+export type ResolvedDictionary<L extends string, D extends Input<L>> = {
+  /** Fully resolved dictionary — each entry a typed callable. */
+  copy: Merged<L, D>;
+  /** Active locale as an {@link Intl.Locale} instance. */
+  locale: Intl.Locale;
+  /**
+   * Text direction for the active locale. Prefer this over
+   * `locale.textInfo?.direction` — the Intl Locale Info API is optional in
+   * older runtimes (Hermes, older WebViews) and returns `undefined` there;
+   * this field is computed against a known-RTL language set so it always
+   * resolves to `"ltr"` or `"rtl"`.
+   */
+  direction: "ltr" | "rtl";
+};

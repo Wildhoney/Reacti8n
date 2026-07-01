@@ -1,4 +1,4 @@
-import type { Formatter, Mode, Variants } from "../types.ts";
+import type { Formatter, Variants } from "../types.ts";
 
 /**
  * Type-only wrapper that pairs a per-locale set of {@link Formatter}s with
@@ -31,23 +31,21 @@ export class Template<L extends string, Args> {
 
 /**
  * Curried alternative to `i18n.template<Args>(...)` — captures the locale
- * union and strictness, returns a `template(variants)` function. Useful when
- * defining templates outside the {@link I18n} instance scope (e.g. helper
- * modules).
+ * union, returns a `template(variants)` function. Useful when defining
+ * templates outside the {@link I18n} instance scope (e.g. helper modules).
  *
  * `Args` defaults to `object`, so token-less templates omit the generic and
- * are callable as `copy.foo()` (no `{}` placeholder). Supplying `Args` with
- * at least one required key flips the resolved callable's parameter from
- * optional to required — see {@link Resolved}.
+ * are callable as `t.copy.foo()` (no `{}` placeholder). Supplying `Args`
+ * with at least one required key flips the resolved callable's parameter
+ * from optional to required — see {@link Resolved}.
  *
  * @typeParam L - Locale union for this i18n instance.
- * @typeParam M - Coverage strictness — defaults to {@link Mode.Loose}.
  * @returns A `template<Args>(variants)` function that builds a typed
  * {@link Template}.
  */
-export function makeTemplate<L extends string, M extends Mode = Mode.Loose>() {
+export function makeTemplate<L extends string>() {
   return function template<Args = object>(
-    variants: Variants<L, Formatter<Args>, M>,
+    variants: Variants<L, Formatter<Args>>,
   ): Template<L, Args> {
     return new Template<L, Args>(variants as Variants<L, Formatter<unknown>>);
   };

@@ -29,12 +29,9 @@
   - [Plurals](#plurals)
   - [Currency and numbers](#currency-and-numbers)
   - [Dates and times](#dates-and-times)
-- [Partial coverage](#partial-coverage)
 - [Interpolating components](#interpolating-components)
-- [Resolved-locale metadata](#resolved-locale-metadata)
-- [Strict mode](#strict-mode)
+- [Active locale metadata](#active-locale-metadata)
 - [Unit testing](#unit-testing)
-- [Fallback observability](#fallback-observability)
 - [Intl polyfills](#intl-polyfills)
 
 ## Benefits
@@ -42,10 +39,9 @@
 - Plain TS / JS — interpolation is template literals; `Intl.NumberFormat`, `Intl.DateTimeFormat`, and `Intl.PluralRules` are injected per formatter.
 - Type-safe arguments — `template<{ name: string }>({...})` enforces the argument shape across every locale.
 - Message-first nesting — each message lives next to its translations.
-- At-least-one locale — the type system rejects empty entries; the runtime walks the configured `locales` list in order to find a defined variant.
-- Strict mode opt-in — pass `Mode.Strict` and the type system enforces every locale on every message.
+- Full coverage enforced — every dictionary entry must define every configured locale; partial coverage is a compile-time error.
 - Rich messages — formatters return `ReactNode`, so JSX (links, styled spans, icons) embeds inline without a wrapper component.
-- Fallback observability — register a callback fired whenever the requested locale falls back to another.
+- Locale metadata built in — `useI18n(...)` returns `{ copy, locale, direction }` where `locale` is a full `Intl.Locale` (region, script, week info, numbering system, …) and `direction` is an `"ltr" | "rtl"` shortcut safe on runtimes that don't ship the Intl Locale Info API.
 - No runtime DSL — drop the `intl-messageformat` parser entirely.
 
 ## Getting started
@@ -56,7 +52,7 @@ Install the package. The `@formatjs/intl-*` polyfills are only needed if you hav
 pnpm add tradurre
 ```
 
-Configure once in your app entry. The class returns a typed instance scoped to your locale list — no module-level globals. The fallback chain is the order of `locales`: lookup walks left-to-right and stops at the first defined variant. The type system requires at least one locale per message, so a message that is undefined in every locale is a compile error.
+Configure once in your app entry. The class returns a typed instance scoped to your locale list — no module-level globals. Every dictionary entry must define every locale in this list; a missing variant is a compile error.
 
 ```ts
 import { I18n } from "tradurre";
@@ -69,12 +65,6 @@ enum Locale {
 
 export const i18n = new I18n({
   locales: [Locale.En, Locale.Fr, Locale.De] as const,
-  onFallback(details) {
-    Sentry.captureMessage(
-      `i18n fallback: ${details.key} (${details.requested} → ${details.resolved ?? "null"})`,
-      "warning",
-    );
-  },
 });
 ```
 
@@ -136,11 +126,11 @@ const detected = i18n.detect([
 ]);
 ```
 
-Candidates are tried in order. Non-strings are skipped, primary tags (`fr-CA` → `fr`) match before exact codes, and if nothing matches the function returns `locales[0]`. The same matching pipeline is used whether candidates come from `navigator` or from your own pipeline.
+Candidates are tried in order. Non-strings are skipped, primary tags (`fr-CA` → `fr`) match before exact codes, and if nothing matches the function returns `locales[0]`.
 
 ## Defining messages
 
-A dictionary is a flat record of message-id → `i18n.template<Args>({ ... })`. Every entry must be a template — even a token-less constant string — so every resolved value is a callable carrying `.direction` / `.locale` metadata. The `Args` generic defaults to `object`, so messages with no tokens omit both the generic and the call-site arguments. Template formatters receive a single `{ tokens, helpers }` payload — `tokens` is the typed args object you pass at the call site; `helpers` is locale-bound and exposes `numberFormat`, `dateTimeFormat`, and `pluralRules` factories that return `Intl` instances.
+A dictionary is a flat record of message-id → `i18n.template<Args>({ ... })`. Every entry must be a template — even a token-less constant string — and every configured locale must be defined on every template. The `Args` generic defaults to `object`, so messages with no tokens omit both the generic and the call-site arguments. Template formatters receive a single `{ tokens, helpers }` payload — `tokens` is the typed args object you pass at the call site; `helpers` is locale-bound and exposes `numberFormat`, `dateTimeFormat`, and `pluralRules` factories that return `Intl` instances.
 
 ```ts
 import { i18n } from "./i18n";
@@ -170,6 +160,8 @@ export const translations = i18n.dictionary({
 });
 ```
 
+Omitting any locale from a template is a compile error — the type system enforces full coverage across the configured `locales`.
+
 ## Consuming messages
 
 ```tsx
@@ -181,18 +173,18 @@ type WelcomeProps = {
 };
 
 export function Welcome({ name }: WelcomeProps) {
-  const copy = i18n.useI18n(translations);
+  const intl = i18n.useI18n(translations);
 
   return (
     <section>
-      <h1>{copy.greet({ name })}</h1>
-      <p>{copy.ok()}</p>
+      <h1>{intl.copy.greet({ name })}</h1>
+      <p>{intl.copy.ok()}</p>
     </section>
   );
 }
 ```
 
-Every resolved entry is a callable typed by its declared `Args`. Token-less messages (`copy.ok()`) take no arguments; templated messages (`copy.greet({ name })`) require their typed `tokens` object. `helpers` are bound automatically based on the active locale.
+`useI18n(...)` returns `{ copy, locale, direction }`. `copy` is the fully resolved dictionary — every entry a typed callable. Token-less messages (`intl.copy.ok()`) take no arguments; templated messages (`intl.copy.greet({ name })`) require their typed `tokens` object. `locale` is the active `Intl.Locale` and `direction` is its `"ltr" | "rtl"` shortcut (see [Active locale metadata](#active-locale-metadata)). `helpers` inside formatters are bound automatically based on the active locale.
 
 ## Helpers
 
@@ -245,6 +237,11 @@ balance: i18n.template<Tokens.Balance>({
       .numberFormat({ style: "currency", currency: "EUR" })
       .format(tokens.amount)}`;
   },
+  [Locale.De]({ tokens, helpers }) {
+    return `Saldo: ${helpers
+      .numberFormat({ style: "currency", currency: "EUR" })
+      .format(tokens.amount)}`;
+  },
 }),
 ```
 
@@ -268,18 +265,13 @@ sentOn: i18n.template<Tokens.SentOn>({
       .dateTimeFormat({ dateStyle: "long" })
       .format(tokens.when)}`;
   },
+  [Locale.De]({ tokens, helpers }) {
+    return `Gesendet am ${helpers
+      .dateTimeFormat({ dateStyle: "long" })
+      .format(tokens.when)}`;
+  },
 }),
 ```
-
-## Partial coverage
-
-In the default `Mode.Loose`, partial coverage is fine — the runtime walks the configured `locales` list in order, and the type system only requires at least one variant to be defined. A request for a missing locale resolves via the fallback chain and fires the `onFallback` callback.
-
-```ts
-auRevoir: i18n.template({ [Locale.Fr]: () => "Au revoir" }),
-```
-
-A consumer requesting `en` resolves `auRevoir` to the `fr` variant and the callback fires with `{ key: "auRevoir", requested: Locale.En, resolved: Locale.Fr }`.
 
 ## Interpolating components
 
@@ -316,87 +308,36 @@ type ArticleCountProps = {
 };
 
 function ArticleCount({ count }: ArticleCountProps) {
-  const copy = i18n.useI18n(translations);
-  return <>{copy.articles({ count })}</>;
+  const intl = i18n.useI18n(translations);
+  return <>{intl.copy.articles({ count })}</>;
 }
 ```
 
 String returns inline as text, JSX returns render their tree. The arg type is inferred from the message, so passing the wrong shape is a compile error.
 
-## Resolved-locale metadata
+## Active locale metadata
 
-Every resolved template callable carries two read-only properties — `direction` and `locale` — describing the locale that _actually_ backed the resolution. When a consumer asks for Arabic but a message is only defined in French, `copy.greet.direction` is `"ltr"` (French) and `copy.greet.locale.language` is `"fr"`, regardless of `i18n.useLocale().locale`. This is the right value to pass into a `<h1 dir={...}>` because the rendered text matches its actual source locale.
-
-```tsx
-const copy = i18n.useI18n(translations);
-
-return (
-  <article>
-    <h1 dir={copy.greet.direction}>{copy.greet({ name: "Imogen" })}</h1>
-    <p>script: {copy.greet.locale.script ?? "—"}</p>
-    <p>region: {copy.greet.locale.region ?? "—"}</p>
-    <p>numbering: {copy.greet.locale.numberingSystem}</p>
-    <p>first day of week: {copy.greet.locale.weekInfo?.firstDay ?? "—"}</p>
-  </article>
-);
-```
-
-The `locale` field is a full `Intl.Locale` instance, so every locale-specific bit (text direction, week info, numbering system, calendar, hour cycle, language, region, script, …) is reachable via the standard browser API:
-
-```ts
-type ResolvedTemplateMeta = {
-  readonly locale: Intl.Locale;
-  readonly direction: "ltr" | "rtl";
-};
-```
-
-`direction` is a flat shortcut for `locale.textInfo.direction` — the common case is "swap the layout for RTL," which is one read.
-
-Because every dictionary entry is an `i18n.template({ ... })`, this metadata is always present — even on token-less messages. The `Args` generic defaults to `object`, so you can omit both the type parameter and the call-site arguments:
+`useI18n(...)` returns `{ copy, locale, direction }`. `locale` is a full `Intl.Locale` instance, so every locale-specific bit — week info, numbering system, calendar, hour cycle, language, region, script, … — is reachable via the standard browser API. `direction` is a `"ltr" | "rtl"` shortcut computed against the Intl Locale Info API where available, with a known-RTL language fallback for runtimes that don't ship `textInfo` yet (older WebViews, some Hermes builds):
 
 ```tsx
-export const translations = i18n.dictionary({
-  appTitle: i18n.template({
-    [Locale.En]: () => "Coffee Menu",
-    [Locale.Ar]: () => "قائمة القهوة",
-  }),
-});
+function Heading({ name }: { name: string }) {
+  const intl = i18n.useI18n(translations);
 
-function Heading() {
-  const copy = i18n.useI18n(translations);
-  return <h1 dir={copy.appTitle.direction}>{copy.appTitle()}</h1>;
+  return (
+    <article dir={intl.direction}>
+      <h1>{intl.copy.greet({ name })}</h1>
+      <p>script: {intl.locale.script ?? "—"}</p>
+      <p>region: {intl.locale.region ?? "—"}</p>
+      <p>numbering: {intl.locale.numberingSystem}</p>
+      <p>first day of week: {intl.locale.weekInfo?.firstDay ?? "—"}</p>
+    </article>
+  );
 }
 ```
 
-Token-less templates are called as `copy.foo()` — no `{}` placeholder needed. Add tokens (`i18n.template<{ name: string }>({...})`) and the call site is required to pass them; the type system flips the parameter from optional to required automatically.
-
-## Strict mode
-
-By default (`Mode.Loose`), the type system requires at least one locale per message — partial coverage compiles and falls back at runtime. Pass `Mode.Strict` as the second generic argument and every dictionary entry must define every locale, with templates needing a formatter for each one.
-
-In the snippet below, the locale set is `Locale.En | Locale.Fr`. `auRevoir` only defines `fr`, which the compiler rejects in strict mode — the same code is valid under the default `Mode.Loose`.
-
-```ts
-import { I18n, Mode } from "tradurre";
-
-namespace Locale {
-  export type Set = Locale.En | Locale.Fr;
-}
-
-export const i18n = new I18n<Locale.Set, Mode.Strict>({
-  locales: [Locale.En, Locale.Fr] as const,
-});
-
-i18n.dictionary({
-  auRevoir: i18n.template({ [Locale.Fr]: () => "Au revoir" }),
-});
-```
-
-Strict mode is purely a compile-time constraint — the runtime is identical. Reach for it once the locale set is stable to catch missing translations at build time rather than via the `onFallback` callback.
+Because every dictionary entry defines every configured locale, there is never a divergence between "the locale you asked for" and "the locale that actually resolved" — `intl.locale` is always the active locale.
 
 ## Unit testing
-
-### Wrapping the provider
 
 `i18n.withI18n(locale, element)` wraps any React element in the provider, bound to the given locale. It returns a `ReactElement` you can pass straight to your renderer of choice — no wrapper boilerplate, no separate `<Provider>` import in every test file:
 
@@ -418,83 +359,11 @@ it("greets in German", () => {
 
 `locale` is typed against your configured locale union, so passing an unsupported locale is a compile error. The helper is just `createElement(this.Provider, { locale }, element)` under the hood — no dependency on `@testing-library/react`, so it composes with any React renderer (RTL, `react-test-renderer`, Ink, etc.).
 
-### Asserting fallback events
-
-When a test exercises a code path that resolves to a non-requested locale, you usually want to confirm the fallback fired rather than rely on the rendered string alone. Spin up a scoped `I18n` instance with `onFallback` wired to a spy — the production instance stays untouched, and you get a precise record of what fell back where:
-
-```tsx
-import { render, screen } from "@testing-library/react";
-import { vi } from "vitest";
-import { I18n } from "tradurre";
-
-it("renders the French copy and reports the fallback", () => {
-  const onFallback = vi.fn();
-  const scoped = new I18n({
-    locales: [Locale.En, Locale.Fr] as const,
-    onFallback,
-  });
-  const translations = scoped.dictionary({
-    auRevoir: scoped.template({ [Locale.Fr]: () => "Au revoir" }),
-  });
-
-  function Probe() {
-    const copy = scoped.useI18n(translations);
-    return <span>{copy.auRevoir()}</span>;
-  }
-
-  render(scoped.withI18n(Locale.En, <Probe />));
-
-  expect(screen.getByText("Au revoir")).toBeInTheDocument();
-  expect(onFallback).toHaveBeenCalledWith({
-    key: "auRevoir",
-    requested: Locale.En,
-    resolved: Locale.Fr,
-  });
-});
-```
-
-The callback fires synchronously inside `Dictionary.resolve()`, so the spy is populated by the time `render` returns. Use the same pattern with `resolved: null` to assert that a key was missing from every locale — a stronger guarantee than checking the rendered DOM for an empty string.
-
-## Fallback observability
-
-A common operational worry with i18n is "missing translations shipped quietly." Tradurre calls the `onFallback` handler (registered on `new I18n()`) every time a dictionary entry resolves to a non-requested locale, or to `null` when the key is missing entirely.
-
-Each event reports three fields. `key` is the message id that fell back. `requested` is the locale the consumer asked for. `resolved` is the locale actually used — or `null` when nothing was found anywhere.
-
-```ts
-type FallbackEvent<L> = {
-  key: string;
-  requested: L;
-  resolved: L | null;
-};
-```
-
-Pipe these into Sentry / Datadog / your logger of choice:
-
-```ts
-new I18n({
-  locales: [Locale.En, Locale.Fr, Locale.De] as const,
-  onFallback(details) {
-    if (details.resolved === null)
-      Sentry.captureException(
-        new Error(`i18n key "${details.key}" is missing in every locale`),
-      );
-    else
-      Sentry.captureMessage(
-        `i18n key "${details.key}" missing for ${details.requested}; served ${details.resolved}`,
-        "warning",
-      );
-  },
-});
-```
-
-The callback is invoked synchronously inside `Dictionary.resolve()`, so keep it cheap — typically just a logger call.
-
 ## Intl polyfills
 
 `Intl.PluralRules`, `Intl.NumberFormat`, and `Intl.DateTimeFormat` ship natively in every modern browser, in Node ≥13, and in Hermes — so most apps need nothing here. If you have to support a runtime that lacks native support for some of your locales (older embedded webviews, exotic CI runtimes), pass a `polyfills` map to `new I18n({ ... })`. Each slot is independent; the constructor installs the engine and CLDR data only when — and only for the specific formatter where — the native check fails.
 
-Loaders live in your code (not in Tradurre) on purpose. Bundlers handle dynamic-import specifiers differently — Vite and webpack tolerate template literals, Metro (React Native) rejects them at transform time — so the only sound contract is for the call site to decide. The `data` parameter is typed as your configured locale union, so a `switch (locale)` is exhaustive: Tradurre's fallback chain means any configured locale can end up rendering a message, so data must be loaded for **all** of them, not just the active one.
+Loaders live in your code (not in Tradurre) on purpose. Bundlers handle dynamic-import specifiers differently — Vite and webpack tolerate template literals, Metro (React Native) rejects them at transform time — so the only sound contract is for the call site to decide. The `data` parameter is typed as your configured locale union, so a `switch (locale)` is exhaustive.
 
 For Vite or webpack — template literals are fine:
 
@@ -548,7 +417,7 @@ new I18n({
 });
 ```
 
-If you do need data for a locale Hermes doesn't cover, supply loaders whose `data()` switches on `locale` to static specifiers. Tradurre walks the fallback chain through every configured locale, so the switch must cover all of them — TypeScript narrows `locale` to your `locales` union so missing cases are a compile error when the switch is exhaustive:
+If you do need data for a locale Hermes doesn't cover, supply loaders whose `data()` switches on `locale` to static specifiers — TypeScript narrows `locale` to your `locales` union so missing cases are a compile error when the switch is exhaustive:
 
 ```ts
 new I18n({

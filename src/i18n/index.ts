@@ -6,26 +6,16 @@ import { makeHooks } from "../hooks/index.ts";
 import { installPolyfills } from "../polyfill/index.ts";
 import { makeProvider } from "../provider/index.tsx";
 import { Template } from "../template/index.ts";
-import type {
-  FallbackHandler,
-  Formatter,
-  I18nConfig,
-  Input,
-  Mode,
-  Variants,
-} from "../types.ts";
+import type { Formatter, I18nConfig, Input, Variants } from "../types.ts";
 
 /**
  * Locale-scoped i18n runtime. One {@link I18n} instance per application,
- * configured once with the supported locale list and an optional fallback
- * handler. All other public API — dictionary, template, hooks, provider,
- * detect — lives as methods or fields on the instance.
+ * configured once with the supported locale list. All other public API —
+ * dictionary, template, hooks, provider, detect — lives as methods or fields
+ * on the instance.
  *
  * @typeParam L - Locale union; usually narrowed via `as const` on
  * `config.locales`.
- * @typeParam M - Coverage strictness. Defaults to {@link Mode.Loose}; pass
- * {@link Mode.Strict} explicitly to require every dictionary entry to define
- * every locale.
  *
  * @example
  * ```ts
@@ -33,22 +23,11 @@ import type {
  *
  * export const i18n = new I18n({
  *   locales: [Locale.En, Locale.Fr, Locale.De] as const,
- *   onFallback(details) {
- *     console.warn(`fallback ${details.key}: ${details.requested} -> ${details.resolved}`);
- *   },
  * });
  * ```
  */
-export class I18n<const L extends string, M extends Mode = Mode.Loose> {
-  /**
-   * Phantom field used to carry {@link Mode} through the type system. Never
-   * read at runtime.
-   *
-   * @internal
-   */
-  declare readonly __mode: M;
-
-  /** Locale list this instance was configured with, in fallback-chain order. */
+export class I18n<const L extends string> {
+  /** Locale list this instance was configured with — first entry is the initial locale. */
   readonly locales: readonly L[];
 
   /** React context provider that exposes the active locale to descendants. */
@@ -71,14 +50,12 @@ export class I18n<const L extends string, M extends Mode = Mode.Loose> {
   /** Type guard narrowing an arbitrary string to the locale union `L`. */
   readonly isLocale: ReturnType<typeof makeDetect<L>>["isLocale"];
 
-  readonly #onFallback?: FallbackHandler<L>;
-
   /**
    * Constructs a locale-scoped runtime.
    *
-   * @param config - Locale list and optional fallback handler. The first
-   * locale is used both as the provider's initial value and as the default
-   * returned by `detect()` when no candidate matches.
+   * @param config - Locale list (and optional polyfills). The first locale is
+   * used both as the provider's initial value and as the default returned by
+   * `detect()` when no candidate matches.
    *
    * @throws {@link Error} When `config.locales` is empty.
    */
@@ -90,7 +67,6 @@ export class I18n<const L extends string, M extends Mode = Mode.Loose> {
       );
     }
     this.locales = config.locales;
-    this.#onFallback = config.onFallback;
     const provider = makeProvider<L>(initial);
     this.Provider = provider.Provider;
     this.useLocale = provider.useLocale;
@@ -105,8 +81,7 @@ export class I18n<const L extends string, M extends Mode = Mode.Loose> {
   /**
    * Builds a typed {@link Dictionary} from a flat record of message-id →
    * {@link Template}. Every entry must be wrapped in {@link I18n.template} —
-   * plain `{ en: "OK" }` maps are rejected at compile time so every resolved
-   * value is a callable carrying `.direction` / `.locale` metadata.
+   * plain `{ en: "OK" }` maps are rejected at compile time.
    *
    * @typeParam D - Inferred dictionary shape; preserves per-key argument
    * types.
@@ -116,16 +91,16 @@ export class I18n<const L extends string, M extends Mode = Mode.Loose> {
    * against the active locale.
    */
   dictionary<D extends Input<L>>(entries: D): Dictionary<L, D> {
-    return new Dictionary<L, D>(this.locales, entries, this.#onFallback);
+    return new Dictionary<L, D>(entries);
   }
 
   /**
    * Wraps a per-locale set of {@link Formatter}s into a {@link Template}
-   * suitable for inclusion in `dictionary({ ... })`. The `Args` generic is
-   * preserved at the call site so consumers get typed arguments when
-   * invoking the resolved message. Defaults to `object` so token-less
-   * messages can be written as `i18n.template({ ... })` — the resolved
-   * callable still carries `.direction` / `.locale` metadata.
+   * suitable for inclusion in `dictionary({ ... })`. Every configured locale
+   * must supply a formatter; partial coverage is a compile-time error. The
+   * `Args` generic is preserved at the call site so consumers get typed
+   * arguments when invoking the resolved message. Defaults to `object` so
+   * token-less messages can be written as `i18n.template({ ... })`.
    *
    * @typeParam Args - Shape of the tokens object accepted by every variant.
    * Defaults to `object`.
@@ -135,7 +110,7 @@ export class I18n<const L extends string, M extends Mode = Mode.Loose> {
    * typed callable at lookup time.
    */
   template<Args = object>(
-    variants: Variants<L, Formatter<Args>, M>,
+    variants: Variants<L, Formatter<Args>>,
   ): Template<L, Args> {
     return new Template<L, Args>(variants as Variants<L, Formatter<unknown>>);
   }

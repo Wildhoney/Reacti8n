@@ -7,7 +7,7 @@ import { dictionary } from "./index.i18n";
 import * as styles from "./styles";
 
 export function Header() {
-  const copy = i18n.useI18n(dictionary);
+  const intl = i18n.useI18n(dictionary);
 
   return (
     <Layout.Header className={styles.header}>
@@ -23,11 +23,11 @@ export function Header() {
             />
             <div className={styles.text}>
               <Typography.Title level={3} className={styles.title}>
-                {copy.appTitle()}
+                {intl.copy.appTitle()}
               </Typography.Title>
 
               <Typography.Text type="secondary" className={styles.tagline}>
-                {copy.tagline()}
+                {intl.copy.tagline()}
               </Typography.Text>
             </div>
           </div>
@@ -35,7 +35,7 @@ export function Header() {
         <Col xs={24} md={8} className={styles.actions}>
           <Space size="middle" align="center" wrap>
             <Typography.Text type="secondary">
-              {copy.languageLabel()}
+              {intl.copy.languageLabel()}
             </Typography.Text>
 
             <Selector />

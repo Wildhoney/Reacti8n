@@ -9,18 +9,17 @@ import { Header } from "../header";
 import * as styles from "./styles";
 
 export function App() {
-  const { locale } = i18n.useLocale();
-  const copy = i18n.useI18n(dictionary);
+  const intl = i18n.useI18n(dictionary);
 
   useEffect(() => {
-    document.documentElement.dir = copy.price.direction;
-    document.documentElement.lang = locale;
-  }, [copy.price.direction, locale]);
+    document.documentElement.dir = intl.direction;
+    document.documentElement.lang = intl.locale.baseName;
+  }, [intl.direction, intl.locale]);
 
   return (
     <ConfigProvider
       theme={{ algorithm: theme.defaultAlgorithm }}
-      direction={copy.price.direction}
+      direction={intl.direction}
     >
       <Layout className={styles.container}>
         <Header />

@@ -45,6 +45,11 @@ describe("makeTemplate()", () => {
           .numberFormat({ style: "currency", currency: "USD" })
           .format(tokens.amount)}`;
       },
+      fr({ tokens, helpers }) {
+        return `Solde : ${helpers
+          .numberFormat({ style: "currency", currency: "EUR" })
+          .format(tokens.amount)}`;
+      },
     });
     expect(
       message.variants.en?.({
