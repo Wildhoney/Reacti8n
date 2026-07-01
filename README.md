@@ -176,6 +176,24 @@ export const translations = i18n.dictionary({
 });
 ```
 
+Constants and templates are plain values, so hoist common copy — button labels (`Save`, `Cancel`, `Submit`), validation messages, shared microcopy — into their own modules and reuse them across dictionaries. Type inference flows across the import boundary, so `intl.copy.greet({ name })` stays fully typed. Let TypeScript infer the return; don't widen the export to `Entry<L>` or the `Args` generic gets erased.
+
+```ts
+export const signIn = i18n.constant({
+  [Locale.En]: "Sign in",
+  [Locale.Fr]: "Se connecter",
+  [Locale.De]: "Anmelden",
+});
+
+export const greet = i18n.template<Tokens.Greet>({
+  [Locale.En]({ tokens }) { return `Hello, ${tokens.name}`; },
+  [Locale.Fr]({ tokens }) { return `Bonjour, ${tokens.name}`; },
+  [Locale.De]({ tokens }) { return `Hallo, ${tokens.name}`; },
+});
+
+export const translations = i18n.dictionary({ signIn, greet });
+```
+
 ## Usage
 
 ```tsx
